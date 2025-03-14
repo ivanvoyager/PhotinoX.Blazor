@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35825.156
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Photino.Blazor.EmbeddedMudBlazorSample", "Photino.Blazor.EmbeddedMudBlazorSample\Photino.Blazor.EmbeddedMudBlazorSample.csproj", "{B76620BD-4112-4865-A995-04B4F35F618C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{E15E491A-E872-91D8-DF7A-CA59C792F064}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B76620BD-4112-4865-A995-04B4F35F618C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B76620BD-4112-4865-A995-04B4F35F618C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B76620BD-4112-4865-A995-04B4F35F618C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B76620BD-4112-4865-A995-04B4F35F618C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E15E491A-E872-91D8-DF7A-CA59C792F064}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E15E491A-E872-91D8-DF7A-CA59C792F064}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E15E491A-E872-91D8-DF7A-CA59C792F064}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E15E491A-E872-91D8-DF7A-CA59C792F064}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {933C5CE8-9B0A-4B76-A779-6A7EFB00FCE9}
+	EndGlobalSection
+EndGlobal

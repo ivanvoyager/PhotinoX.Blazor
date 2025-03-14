@@ -1,0 +1,27 @@
+﻿@inherits LayoutComponentBase
+@using MudBlazor
+
+<MudThemeProvider @ref="@_mudThemeProvider" Theme="@_mudTheme" @bind-IsDarkMode="@_isDarkMode" />
+<MudPopoverProvider/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
+
+<MudLayout>
+	<MudAppBar Dense="true">
+		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+	</MudAppBar>
+	<MudDrawer @bind-Open="@_drawerOpen">
+		<MudDrawerHeader>
+			<MudStack Row="true" Justify="Justify.Center">
+				<MudImage Src="photino.png"></MudImage>
+				<MudText Typo="Typo.h5">MudBlazor Sample</MudText>
+			</MudStack>
+		</MudDrawerHeader>
+		<NavMenu />
+	</MudDrawer>
+	<MudMainContent>
+		<MudContainer Class="px-8 py-6">
+			@Body
+		</MudContainer>
+	</MudMainContent>
+</MudLayout>

@@ -1,0 +1,35 @@
+﻿@page "/weather"
+
+@using MudBlazor
+
+<PageTitle>Weather</PageTitle>
+
+<MudContainer>
+    <MudText Typo="Typo.h4">Weather</MudText>
+    <MudText Typo="Typo.body1" Class="mb-4">
+        This component demonstrates showing data.
+    </MudText>
+
+    @if (forecasts == null)
+    {
+        <MudProgressCircular Indeterminate Color="Color.Primary" Size="Size.Medium" Class="my-4" />
+        <MudText Typo="Typo.body2" Color="Color.Primary"><em>Loading...</em></MudText>
+    }
+    else
+    {
+        <MudTable Items="forecasts" Dense Hover="true" Bordered="true" Class="mt-4">
+            <HeaderContent>
+                <MudTh>Date</MudTh>
+                <MudTh>Temp. (C)</MudTh>
+                <MudTh>Temp. (F)</MudTh>
+                <MudTh>Summary</MudTh>
+            </HeaderContent>
+            <RowTemplate Context="forecast">
+                <MudTd>@forecast.Date.ToShortDateString()</MudTd>
+                <MudTd>@forecast.TemperatureC</MudTd>
+                <MudTd>@forecast.TemperatureF</MudTd>
+                <MudTd>@forecast.Summary</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudContainer>
