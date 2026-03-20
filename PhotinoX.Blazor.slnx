@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/Samples/">
+    <Project Path="Samples/HelloWorld/HelloWorld.csproj" />
+    <Project Path="Samples/Photino.Blazor.MultiWindowSample/Photino.Blazor.MultiWindowSample.csproj" />
+    <Project Path="Samples/Photino.Blazor.NativeAOT/Photino.Blazor.NativeAOT.csproj" />
+    <Project Path="Samples/Photino.Blazor.Sample/Photino.Blazor.Sample.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="Photino.Blazor/PhotinoX.Blazor.csproj" />
+</Solution>
