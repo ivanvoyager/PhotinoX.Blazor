@@ -1,0 +1,7 @@
+<Project>
+	<!-- Project properties -->
+	<PropertyGroup>
+		<LangVersion>14</LangVersion>
+	</PropertyGroup>
+
+</Project>
