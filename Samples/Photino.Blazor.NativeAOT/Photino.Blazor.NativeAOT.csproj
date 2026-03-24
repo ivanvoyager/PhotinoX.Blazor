@@ -8,10 +8,14 @@
 		<ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
 		<PublishAot>true</PublishAot>
 		<PublishTrimmed>False</PublishTrimmed>
+		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+		<UseSystemTextJsonSourceGeneration>true</UseSystemTextJsonSourceGeneration>
+		<IlcGenerateCompleteTypes>true</IlcGenerateCompleteTypes>
+		<NoWarn>$(NoWarn);IL2110;IL2111</NoWarn>
 	</PropertyGroup>
 	
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-	  <Optimize>False</Optimize>
+		<Optimize>False</Optimize>
 	</PropertyGroup>
 
 	<ItemGroup>

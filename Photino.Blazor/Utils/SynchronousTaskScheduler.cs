@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Photino.Blazor.Utils
+﻿namespace Photino.Blazor.Utils
 {
     class SynchronousTaskScheduler : TaskScheduler
     {

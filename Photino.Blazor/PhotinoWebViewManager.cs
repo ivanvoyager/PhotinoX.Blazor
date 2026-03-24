@@ -1,18 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
+using System.Threading.Channels;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebView;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
+using Photino.Blazor.Utils;
 using Photino.NET;
-using System;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Channels;
-using System.Threading.Tasks;
 
 namespace Photino.Blazor
 {
@@ -38,7 +35,7 @@ namespace Photino.Blazor
             _window = window ?? throw new ArgumentNullException(nameof(window));
 
             // Create a scheduler that uses one threads.
-            var sts = new Utils.SynchronousTaskScheduler();
+            var sts = new SynchronousTaskScheduler();
 
             _window.WebMessageReceived += (sender, message) =>
             {
@@ -55,13 +52,15 @@ namespace Photino.Blazor
             };
 
             //Create channel and start reader
-            _channel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions() { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = false });
+            _channel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = false });
             Task.Run(messagePump);
         }
 
-        public Stream HandleWebRequest(object sender, string schema, string url, out string contentType)
+        public Stream? HandleWebRequest(object? sender, string schema, string url, out string contentType)
         {
-            // It would be better if we were told whether or not this is a navigation request, but
+            _ = sender;
+            _ = schema;
+            // It would be better if we were told whether this is a navigation request, but
             // since we're not, guess.
             var localPath = (new Uri(url)).LocalPath;
             var hasFileExtension = localPath.LastIndexOf('.') > localPath.LastIndexOf('/');
@@ -70,17 +69,15 @@ namespace Photino.Blazor
             if (url.Contains('?')) url = url.Substring(0, url.IndexOf('?'));
 
             if (url.StartsWith(AppBaseUri, StringComparison.Ordinal)
-                && TryGetResponseContent(url, !hasFileExtension, out var statusCode, out var statusMessage,
+                && TryGetResponseContent(url, !hasFileExtension, out _, out _,
                     out var content, out var headers))
             {
-                headers.TryGetValue("Content-Type", out contentType);
+                headers.TryGetValue("Content-Type", out contentType!);
                 return content;
             }
-            else
-            {
-                contentType = default;
-                return null;
-            }
+
+            contentType = null!;
+            return null;
         }
 
         protected override void NavigateCore(Uri absoluteUri)

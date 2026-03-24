@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-using System.Net.Http;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +8,7 @@ namespace Photino.Blazor
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddBlazorDesktop(this IServiceCollection services, IFileProvider fileProvider = null)
+        public static IServiceCollection AddBlazorDesktop(this IServiceCollection services, IFileProvider? fileProvider = null)
         {
             services
                 .AddOptions<PhotinoBlazorAppConfiguration>()
@@ -24,13 +21,13 @@ namespace Photino.Blazor
             return services
                 .AddScoped(sp =>
                 {
-                    var handler = sp.GetService<PhotinoHttpHandler>();
+                    var handler = sp.GetService<PhotinoHttpHandler>()!;
                     return new HttpClient(handler) { BaseAddress = new Uri(PhotinoWebViewManager.AppBaseUri) };
                 })
                 .AddSingleton(sp =>
                 {
-                    var manager = sp.GetService<PhotinoWebViewManager>();
-                    var store = sp.GetService<JSComponentConfigurationStore>();
+                    var manager = sp.GetService<PhotinoWebViewManager>()!;
+                    var store = sp.GetService<JSComponentConfigurationStore>()!;
 
                     return new BlazorWindowRootComponents(manager, store);
                 })
@@ -42,10 +39,8 @@ namespace Photino.Blazor
                         var root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot");
                         return new PhysicalFileProvider(root);
                     }
-                    else
-                    {
-                        return fileProvider;
-                    }
+
+                    return fileProvider;
                 })
                 .AddSingleton<JSComponentConfigurationStore>()
                 .AddSingleton<PhotinoBlazorApp>()

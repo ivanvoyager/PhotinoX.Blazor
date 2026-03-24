@@ -1,13 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using Photino.NET;
-
-#nullable disable warnings
 
 namespace Photino.Blazor
 {
@@ -24,21 +19,21 @@ namespace Photino.Blazor
 
     internal class PhotinoSynchronizationContext : SynchronizationContext
     {
-        private static readonly ContextCallback ExecutionContextThunk = (object state) =>
+        private static readonly ContextCallback s_executionContextThunk = state =>
         {
-            var item = (WorkItem)state;
+            var item = (WorkItem)state!;
             item.SynchronizationContext.ExecuteSynchronously(null, item.Callback, item.State);
         };
 
-        private static readonly Action<Task, object> BackgroundWorkThunk = (Task task, object state) =>
+        private static readonly Action<Task, object?> s_backgroundWorkThunk = (task, state) =>
         {
-            var item = (WorkItem)state;
+            var item = (WorkItem)state!;
             item.SynchronizationContext.ExecuteBackground(item);
         };
 
         private readonly PhotinoWindow _window;
         private readonly int _uiThreadId;
-        private readonly MethodInfo _invokeMethodInfo;
+        private readonly MethodInfo _invokeMethodInfo;//TODO fix it
 
         public PhotinoSynchronizationContext(PhotinoWindow window)
             : this(window, new State())
@@ -47,26 +42,25 @@ namespace Photino.Blazor
 
         private PhotinoSynchronizationContext(PhotinoWindow window, State state)
         {
-            _state = state;
-
             _window = window ?? throw new ArgumentNullException(nameof(window));
+            _state = state ?? throw new ArgumentNullException(nameof(state));
 
             _uiThreadId = (int)typeof(PhotinoWindow).GetField("_managedThreadId", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .GetValue(_window)!;
+                .GetValue(_window)!;//TODO fix it
 
             _invokeMethodInfo = typeof(PhotinoWindow).GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance)!;
         }
 
         private readonly State _state;
 
-        public event UnhandledExceptionEventHandler UnhandledException;
+        public event UnhandledExceptionEventHandler? UnhandledException;
 
         public Task InvokeAsync(Action action)
         {
-            var completion = new PhotinoSynchronizationTaskCompletionSource<Action, object>(action);
-            ExecuteSynchronouslyIfPossible((state) =>
+            var completion = new PhotinoSynchronizationTaskCompletionSource<Action, object?>(action);
+            ExecuteSynchronouslyIfPossible(static state =>
             {
-                var completion = (PhotinoSynchronizationTaskCompletionSource<Action, object>)state;
+                var completion = (PhotinoSynchronizationTaskCompletionSource<Action, object?>)state!;
                 try
                 {
                     completion.Callback();
@@ -87,13 +81,13 @@ namespace Photino.Blazor
 
         public Task InvokeAsync(Func<Task> asyncAction)
         {
-            var completion = new PhotinoSynchronizationTaskCompletionSource<Func<Task>, object>(asyncAction);
-            ExecuteSynchronouslyIfPossible(async (state) =>
+            var completion = new PhotinoSynchronizationTaskCompletionSource<Func<Task>, object?>(asyncAction);
+            ExecuteSynchronouslyIfPossible(static async state =>
             {
-                var completion = (PhotinoSynchronizationTaskCompletionSource<Func<Task>, object>)state;
+                var completion = (PhotinoSynchronizationTaskCompletionSource<Func<Task>, object?>)state!;
                 try
                 {
-                    await completion.Callback();
+                    await completion.Callback().ConfigureAwait(false);
                     completion.SetResult(null);
                 }
                 catch (OperationCanceledException)
@@ -112,9 +106,9 @@ namespace Photino.Blazor
         public Task<TResult> InvokeAsync<TResult>(Func<TResult> function)
         {
             var completion = new PhotinoSynchronizationTaskCompletionSource<Func<TResult>, TResult>(function);
-            ExecuteSynchronouslyIfPossible((state) =>
+            ExecuteSynchronouslyIfPossible(static state =>
             {
-                var completion = (PhotinoSynchronizationTaskCompletionSource<Func<TResult>, TResult>)state;
+                var completion = (PhotinoSynchronizationTaskCompletionSource<Func<TResult>, TResult>)state!;
                 try
                 {
                     var result = completion.Callback();
@@ -136,12 +130,12 @@ namespace Photino.Blazor
         public Task<TResult> InvokeAsync<TResult>(Func<Task<TResult>> asyncFunction)
         {
             var completion = new PhotinoSynchronizationTaskCompletionSource<Func<Task<TResult>>, TResult>(asyncFunction);
-            ExecuteSynchronouslyIfPossible(async (state) =>
+            ExecuteSynchronouslyIfPossible(static async state =>
             {
-                var completion = (PhotinoSynchronizationTaskCompletionSource<Func<Task<TResult>>, TResult>)state;
+                var completion = (PhotinoSynchronizationTaskCompletionSource<Func<Task<TResult>>, TResult>)state!;
                 try
                 {
-                    var result = await completion.Callback();
+                    var result = await completion.Callback().ConfigureAwait(false);
                     completion.SetResult(result);
                 }
                 catch (OperationCanceledException)
@@ -160,7 +154,7 @@ namespace Photino.Blazor
         // asynchronously runs the callback
         //
         // NOTE: this must always run async. It's not legal here to execute the work item synchronously.
-        public override void Post(SendOrPostCallback d, object state)
+        public override void Post(SendOrPostCallback d, object? state)
         {
             lock (_state.Lock)
             {
@@ -169,10 +163,10 @@ namespace Photino.Blazor
         }
 
         // synchronously runs the callback
-        public override void Send(SendOrPostCallback d, object state)
+        public override void Send(SendOrPostCallback d, object? state)
         {
             Task antecedent;
-            var completion = new TaskCompletionSource<object>();
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
             lock (_state.Lock)
             {
@@ -199,9 +193,9 @@ namespace Photino.Blazor
         //
         // This is the main code path used by components, we want to be able to run async work but only dispatch
         // if necessary.
-        private void ExecuteSynchronouslyIfPossible(SendOrPostCallback d, object state)
+        private void ExecuteSynchronouslyIfPossible(SendOrPostCallback d, object? state)
         {
-            TaskCompletionSource<object> completion;
+            TaskCompletionSource completion;
             lock (_state.Lock)
             {
                 if (!_state.Task.IsCompleted)
@@ -212,47 +206,47 @@ namespace Photino.Blazor
 
                 // We can execute this synchronously because nothing is currently running
                 // or queued.
-                completion = new TaskCompletionSource<object>();
+                completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 _state.Task = completion.Task;
             }
 
             ExecuteSynchronously(completion, d, state);
         }
 
-        private Task Enqueue(Task antecedent, SendOrPostCallback d, object state, bool forceAsync = false)
+        private Task Enqueue(Task antecedent, SendOrPostCallback d, object? state, bool forceAsync = false)
         {
             // If we get here is means that a callback is being explicitly queued. Let's instead add it to the queue and yield.
             //
-            // We use our own queue here to maintain the execution order of the callbacks scheduled here. Also
+            // We use our own queue here to maintain the execution order of the callbacks scheduled here. Also,
             // we need a queue rather than just scheduling an item in the thread pool - those items would immediately
             // block and hurt scalability.
             //
             // We need to capture the execution context so we can restore it later. This code is similar to
             // the call path of ThreadPool.QueueUserWorkItem and System.Threading.QueueUserWorkItemCallback.
-            ExecutionContext executionContext = null;
+            ExecutionContext? executionContext = null;
             if (!ExecutionContext.IsFlowSuppressed())
             {
                 executionContext = ExecutionContext.Capture();
             }
 
             var flags = forceAsync ? TaskContinuationOptions.RunContinuationsAsynchronously : TaskContinuationOptions.None;
-            return antecedent.ContinueWith(BackgroundWorkThunk, new WorkItem()
-            {
-                SynchronizationContext = this,
-                ExecutionContext = executionContext,
-                Callback = d,
-                State = state,
-            }, CancellationToken.None, flags, TaskScheduler.Current);
+            return antecedent.ContinueWith(s_backgroundWorkThunk, new WorkItem(
+                SynchronizationContext: this,
+                ExecutionContext: executionContext,
+                Callback: d,
+                State: state
+            ), CancellationToken.None, flags, TaskScheduler.Current);
         }
 
         private void ExecuteSynchronously(
-            TaskCompletionSource<object> completion,
+            TaskCompletionSource? completion,
             SendOrPostCallback d,
-            object state)
+            object? state)
         {
             // Anything run on the sync context should actually be dispatched as far as Photino
             // is concerned, so that it's safe to interact with the native window/WebView.
-            _invokeMethodInfo.Invoke(_window, new Action[] { () =>
+            _invokeMethodInfo.Invoke(_window, [
+                () =>
             {
                 var original = Current;
                 try
@@ -266,9 +260,10 @@ namespace Photino.Blazor
                     _state.IsBusy = false;
                     SetSynchronizationContext(original);
 
-                    completion?.SetResult(null);
+                    completion?.SetResult();
                 }
-            }});
+            }
+            ]);
         }
 
         private void ExecuteBackground(WorkItem item)
@@ -290,7 +285,7 @@ namespace Photino.Blazor
             // Perf - using a static thunk here to avoid a delegate allocation.
             try
             {
-                ExecutionContext.Run(item.ExecutionContext, ExecutionContextThunk, item);
+                ExecutionContext.Run(item.ExecutionContext, s_executionContextThunk, item);
             }
             catch (Exception ex)
             {
@@ -300,17 +295,17 @@ namespace Photino.Blazor
 
         private void DispatchException(Exception ex)
         {
-            var handler = UnhandledException;
-            if (handler != null)
-            {
-                handler(this, new UnhandledExceptionEventArgs(ex, isTerminating: false));
-            }
+            UnhandledException?.Invoke(this, new UnhandledExceptionEventArgs(ex, isTerminating: false));
         }
 
         private class State
         {
             public bool IsBusy; // Just for debugging
-            public object Lock = new object();
+#if NET9_0_OR_GREATER
+            public readonly Lock Lock = new();
+#else
+            public readonly object Lock = new();
+#endif
             public Task Task = Task.CompletedTask;
 
             public override string ToString()
@@ -319,22 +314,17 @@ namespace Photino.Blazor
             }
         }
 
-        private class WorkItem
-        {
-            public PhotinoSynchronizationContext SynchronizationContext;
-            public ExecutionContext ExecutionContext;
-            public SendOrPostCallback Callback;
-            public object State;
-        }
+        private record WorkItem(
+            PhotinoSynchronizationContext SynchronizationContext,
+            ExecutionContext? ExecutionContext,
+            SendOrPostCallback Callback,
+            object? State);
 
-        private class PhotinoSynchronizationTaskCompletionSource<TCallback, TResult> : TaskCompletionSource<TResult>
-        {
-            public PhotinoSynchronizationTaskCompletionSource(TCallback callback)
-            {
-                Callback = callback;
-            }
 
-            public TCallback Callback { get; }
+        private class PhotinoSynchronizationTaskCompletionSource<TCallback, TResult>(TCallback callback)
+            : TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously)
+        {
+            public TCallback Callback { get; } = callback;
         }
     }
 }

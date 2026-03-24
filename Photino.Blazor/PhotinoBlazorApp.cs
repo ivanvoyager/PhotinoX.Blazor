@@ -1,7 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using Photino.NET;
-using System;
-using System.IO;
 
 namespace Photino.Blazor
 {
@@ -10,19 +8,19 @@ namespace Photino.Blazor
         /// <summary>
         /// Gets configuration for the service provider.
         /// </summary>
-        public IServiceProvider Services { get; private set; }
+        public IServiceProvider Services { get; private set; } = null!;
 
         /// <summary>
         /// Gets configuration for the root components in the window.
         /// </summary>
-        public BlazorWindowRootComponents RootComponents { get; private set; }
+        public BlazorWindowRootComponents RootComponents { get; private set; } = null!;
 
         internal void Initialize(IServiceProvider services, RootComponentList rootComponents)
         {
             Services = services;
-            RootComponents = Services.GetService<BlazorWindowRootComponents>();
-            MainWindow = Services.GetService<PhotinoWindow>();
-            WindowManager = Services.GetService<PhotinoWebViewManager>();
+            RootComponents = Services.GetService<BlazorWindowRootComponents>()!;
+            MainWindow = Services.GetService<PhotinoWindow>()!;
+            WindowManager = Services.GetService<PhotinoWebViewManager>()!;
 
             MainWindow
                 .SetTitle("Photino.Blazor App")
@@ -33,7 +31,7 @@ namespace Photino.Blazor
                 .SetLeft(450)
                 .SetTop(100);
 
-            MainWindow.RegisterCustomSchemeHandler(PhotinoWebViewManager.BlazorAppScheme, HandleWebRequest);
+            MainWindow.RegisterCustomSchemeHandler(PhotinoWebViewManager.BlazorAppScheme, WindowManager.HandleWebRequest);
 
             foreach (var component in rootComponents)
             {
@@ -41,9 +39,9 @@ namespace Photino.Blazor
             }
         }
 
-        public PhotinoWindow MainWindow { get; private set; }
+        public PhotinoWindow MainWindow { get; private set; } = null!;
 
-        public PhotinoWebViewManager WindowManager { get; private set; }
+        public PhotinoWebViewManager WindowManager { get; private set; } = null!;
 
         public void Run()
         {
@@ -53,8 +51,5 @@ namespace Photino.Blazor
             WindowManager.Navigate(MainWindow.StartUrl);
             MainWindow.WaitForClose();
         }
-
-        public Stream HandleWebRequest(object sender, string scheme, string url, out string contentType)
-                => WindowManager.HandleWebRequest(sender, scheme, url, out contentType!)!;
     }
 }

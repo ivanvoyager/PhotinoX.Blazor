@@ -11,7 +11,7 @@ Blazor integration for [**PhotinoX**](https://github.com/ivanvoyager/PhotinoX) (
 - **macOS**: WKWebView
 - **Linux**: WebKitGTK 4.1
 
-> `PhotinoX.Blazor` is an independent fork of [tryphotino/photino.Blazor](https://github.com/tryphotino/photino.Blazor) under the Apache‑2.0 license and is **not affiliated** with the original project or organization.
+> **Note:** `PhotinoX.Blazor` is an independent fork of [tryphotino/photino.Blazor](https://github.com/tryphotino/photino.Blazor) under the Apache‑2.0 license and is **not affiliated** with the original project or organization.
 
 ---
 
@@ -45,6 +45,15 @@ static void Main(string[] args)
 }
 ```
 
+## Core (ecosystem)
+
+- [**PhotinoX**](https://github.com/ivanvoyager/PhotinoX) - .NET wrapper around the native layer.
+- [**PhotinoX.Native**](https://github.com/ivanvoyager/PhotinoX.Native) - native binaries for Windows/macOS/Linux.
+- [**PhotinoX.Server**](https://github.com/ivanvoyager/PhotinoX.Server) - optional static-file server (avoids CORS/ESM issues).
+- [**PhotinoX.Samples**](https://github.com/ivanvoyager/PhotinoX.Samples) - sample projects showcasing common scenarios.
+
+---
+
 ## Install
 
 ```bash
@@ -55,16 +64,20 @@ dotnet add package PhotinoX.Blazor
 
 ## Samples
 
-- https://github.com/ivanvoyager/PhotinoX.Blazor/tree/master/Samples
+- https://github.com/ivanvoyager/PhotinoX.Blazor/blob/master/Samples
 
 ## Requirements
 
 - **.NET 10 SDK** (build)
 - **Target frameworks:** `net8.0; net9.0; net10.0` (package supports all three)
 - Runtime deps: see [**PhotinoX.Native**](https://www.nuget.org/packages/PhotinoX.Native) (`runtimes/<rid>/native/`)
-- **Windows:** WebView2 Runtime
-- **macOS:** WKWebView (system)
-- **Linux:** WebKitGTK 4.1 development/runtime packages
+- **Windows:** WebView2 Runtime  
+  Required component: **Microsoft.Web.WebView2** (Edge WebView2)  
+  https://learn.microsoft.com/microsoft-edge/webview2/
+- **macOS:** WKWebView (system WebKit)  
+  https://developer.apple.com/documentation/webkit/wkwebview/
+- **Linux:** WebKitGTK 4.1 (runtime + dev packages)  
+  https://webkitgtk.org/
 
 ## Build from source
 
@@ -73,12 +86,12 @@ dotnet restore Photino.Blazor/PhotinoX.Blazor.csproj
 dotnet build   Photino.Blazor/PhotinoX.Blazor.csproj -c Release
 dotnet pack    Photino.Blazor/PhotinoX.Blazor.csproj -c Release -o artifacts
 ```
-> CI: see `.github/workflows/build.yml` (build + pack + upload `.nupkg`/`.snupkg`).
+> CI: see [`.github/workflows/build.yml`](https://github.com/ivanvoyager/PhotinoX.Blazor/blob/master/.github/workflows/build.yml) (build + pack + upload `.nupkg`/`.snupkg`).
 
 ## Contributing
 
-Issues and PRs are welcome. Keep changes minimal and performance-conscious.
+Issues and PRs are welcome. Keep PRs focused, minimal, and consistent with the rest of PhotinoX.
 
 ## License
 
-PhotinoX.Blazor is licensed under **Apache‑2.0**.  
+PhotinoX.Blazor is licensed under **Apache‑2.0**.

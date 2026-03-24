@@ -1,9 +1,7 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using System.Collections;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 
 namespace Photino.Blazor
 {
@@ -11,19 +9,20 @@ namespace Photino.Blazor
     {
         internal PhotinoBlazorAppBuilder()
         {
-            RootComponents = new RootComponentList();
+            RootComponents = [];
             Services = new ServiceCollection();
         }
 
-        public static PhotinoBlazorAppBuilder CreateDefault(string[] args = default)
+        public static PhotinoBlazorAppBuilder CreateDefault(string[]? args = null)
         {
             return CreateDefault(null, args);
         }
 
-        public static PhotinoBlazorAppBuilder CreateDefault(IFileProvider fileProvider, string[] args = default)
+        public static PhotinoBlazorAppBuilder CreateDefault(IFileProvider? fileProvider, string[]? args = null)
         {
             // We don't use the args for anything right now, but we want to accept them
             // here so that it shows up this way in the project templates.
+            _ = args;
             // var jsRuntime = DefaultWebAssemblyJSRuntime.Instance;
             var builder = new PhotinoBlazorAppBuilder();
             builder.Services.AddBlazorDesktop(fileProvider);
@@ -39,7 +38,7 @@ namespace Photino.Blazor
 
         public IServiceCollection Services { get; }
 
-        public PhotinoBlazorApp Build(Action<IServiceProvider> serviceProviderOptions = null)
+        public PhotinoBlazorApp Build(Action<IServiceProvider>? serviceProviderOptions = null)
         {
             // register root components with DI container
             // Services.AddSingleton(RootComponents);
@@ -56,11 +55,11 @@ namespace Photino.Blazor
 
     public class RootComponentList : IEnumerable<(Type, string)>
     {
-        private readonly List<(Type componentType, string domElementSelector)> components = new List<(Type componentType, string domElementSelector)>();
+        private readonly List<(Type componentType, string domElementSelector)> _components = [];
 
         public void Add<TComponent>(string selector) where TComponent : IComponent
         {
-            components.Add((typeof(TComponent), selector));
+            _components.Add((typeof(TComponent), selector));
         }
 
         public void Add(Type componentType, string selector)
@@ -70,17 +69,17 @@ namespace Photino.Blazor
                 throw new ArgumentException("The component type must implement IComponent interface.");
             }
 
-            components.Add((componentType, selector));
+            _components.Add((componentType, selector));
         }
 
         public IEnumerator<(Type, string)> GetEnumerator()
         {
-            return components.GetEnumerator();
+            return _components.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return components.GetEnumerator();
+            return _components.GetEnumerator();
         }
     }
 }
