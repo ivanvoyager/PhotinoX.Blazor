@@ -11,6 +11,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v6
+
       - name: setup dotnet
         uses: actions/setup-dotnet@v5
         with:
@@ -23,7 +24,7 @@ jobs:
         run: dotnet build Photino.Blazor/PhotinoX.Blazor.csproj -c Release --no-restore --nologo -warnaserror
 
       - name: pack (nupkg + snupkg)
-        run: dotnet pack Photino.Blazor/PhotinoX.Blazor.csproj -c Release -o artifacts --nologo /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg
+        run: dotnet pack Photino.Blazor/PhotinoX.Blazor.csproj -c Release -o artifacts --nologo /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg -p:VersionSuffix="pre.${{ github.run_number }}"
 
       - name: upload nupkg
         uses: actions/upload-artifact@v6

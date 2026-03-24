@@ -7,7 +7,7 @@
 		<Description>Blazor integration for PhotinoX (.NET wrapper for OS-native WebView windows). 
 Maintained fork of Photino.Blazor.</Description>
 		<RootNamespace>Photino.Blazor</RootNamespace>
-		<Version>4.1.1</Version>
+		<VersionPrefix>4.1.1</VersionPrefix>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">

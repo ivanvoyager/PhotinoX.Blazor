@@ -6,8 +6,8 @@ namespace Photino.Blazor.EmbeddedMudBlazorSample.Components.Layout
 {
     public partial class MainLayout : LayoutComponentBase
     {
-        public required MudThemeProvider _mudThemeProvider;
-        private MudTheme _mudTheme = AppThemeProvider.GetTheme();
+        private MudThemeProvider _mudThemeProvider = null!;
+        private readonly MudTheme _mudTheme = AppThemeProvider.GetTheme();
         private bool _drawerOpen = true;
         private bool _isDarkMode;
 
@@ -20,15 +20,17 @@ namespace Photino.Blazor.EmbeddedMudBlazorSample.Components.Layout
         {
             if (firstRender)
             {
-                _isDarkMode = await _mudThemeProvider.GetSystemPreference();
-                await _mudThemeProvider.WatchSystemPreference(OnSystemPreferenceChanged);
+                _isDarkMode = await _mudThemeProvider.GetSystemDarkModeAsync();
+
+                await _mudThemeProvider.WatchSystemDarkModeAsync(OnSystemDarkModeChanged);
+
                 StateHasChanged();
             }
         }
 
-        private Task OnSystemPreferenceChanged(bool newValue)
+        private Task OnSystemDarkModeChanged(bool darkMode)
         {
-            _isDarkMode = newValue;
+            _isDarkMode = darkMode;
             StateHasChanged();
             return Task.CompletedTask;
         }

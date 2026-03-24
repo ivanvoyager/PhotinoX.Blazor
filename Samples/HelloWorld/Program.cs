@@ -23,9 +23,9 @@ class Program
             .SetIconFile("favicon.ico")
             .SetTitle("Photino Hello World");
 
-        AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
+        AppDomain.CurrentDomain.UnhandledException += (_, error) =>
         {
-            app.MainWindow.ShowMessage("Fatal exception", error.ExceptionObject.ToString());
+            app.MainWindow.ShowMessage("Fatal exception", error.ExceptionObject.ToString()!);
         };
 
         app.Run();

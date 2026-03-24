@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Samples/">
     <Project Path="Samples/HelloWorld/HelloWorld.csproj" />
+    <Project Path="Samples/Photino.Blazor.EmbeddedMudBlazorSample/Photino.Blazor.EmbeddedMudBlazorSample/Photino.Blazor.EmbeddedMudBlazorSample.csproj" />
     <Project Path="Samples/Photino.Blazor.MultiWindowSample/Photino.Blazor.MultiWindowSample.csproj" />
     <Project Path="Samples/Photino.Blazor.NativeAOT/Photino.Blazor.NativeAOT.csproj" />
     <Project Path="Samples/Photino.Blazor.Sample/Photino.Blazor.Sample.csproj" />

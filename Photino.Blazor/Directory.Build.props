@@ -5,6 +5,7 @@
 		<Company>ivanvoyager</Company>
 		<Copyright>Copyright (c) $(Authors) $([System.DateTime]::Today.ToString(yyyy))</Copyright>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<IsPackable>true</IsPackable>
 		<PackageIcon>logo.png</PackageIcon>
 		<PackageId>PhotinoX.Blazor</PackageId>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -15,6 +16,7 @@
 
 	<!-- SourceLink -->
 	<PropertyGroup>
+		<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
 		<!-- Optional: Publish the repository URL in the built .nupkg (in the NuSpec <Repository> element) -->
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<!-- Optional: Embed source files that are not tracked by the source control manager in the PDB -->

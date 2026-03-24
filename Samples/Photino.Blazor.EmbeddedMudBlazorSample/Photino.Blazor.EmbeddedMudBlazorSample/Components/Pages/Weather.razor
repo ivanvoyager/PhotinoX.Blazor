@@ -10,14 +10,14 @@
         This component demonstrates showing data.
     </MudText>
 
-    @if (forecasts == null)
+    @if (_forecasts == null)
     {
         <MudProgressCircular Indeterminate Color="Color.Primary" Size="Size.Medium" Class="my-4" />
         <MudText Typo="Typo.body2" Color="Color.Primary"><em>Loading...</em></MudText>
     }
     else
     {
-        <MudTable Items="forecasts" Dense Hover="true" Bordered="true" Class="mt-4">
+        <MudTable Items="_forecasts" Dense Hover="true" Bordered="true" Class="mt-4">
             <HeaderContent>
                 <MudTh>Date</MudTh>
                 <MudTh>Temp. (C)</MudTh>
