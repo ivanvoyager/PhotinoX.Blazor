@@ -1,5 +1,11 @@
 <Project>
-	<!-- NuGet -->
+
+  <!-- Project properties -->
+  <PropertyGroup>
+    <PhotinoX_UseLocalProjects Condition="'$(PhotinoX_UseLocalProjects)' == ''">false</PhotinoX_UseLocalProjects>
+  </PropertyGroup>
+
+	<!-- Package metadata -->
 	<PropertyGroup>
 		<Authors>ivanvoyager, TryPhotino</Authors>
 		<Company>ivanvoyager</Company>
@@ -30,5 +36,15 @@
 		<None Include="../assets/logo.png" Pack="true" PackagePath="\" />
 		<None Include="../README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
+
+  <Import Project="..\..\Directory.Build.props" Condition="Exists('..\..\Directory.Build.props')" />
+
+  <ItemGroup Condition="'$(PhotinoX_UseLocalProjects)' != 'true'">
+    <PackageReference Include="PhotinoX" Version="4.1.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PhotinoX_UseLocalProjects)' == 'true'">
+    <ProjectReference Include="..\..\PhotinoX\Photino.NET\PhotinoX.csproj" />
+  </ItemGroup>
 
 </Project>
