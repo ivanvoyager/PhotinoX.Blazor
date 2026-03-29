@@ -34,7 +34,7 @@ static void Main(string[] args)
 	// customize window
 	app.MainWindow
 		.SetIconFile("favicon.ico")
-		.SetTitle("Photino Blazor Sample");
+		.SetTitle("PhotinoX Blazor Sample");
 
 	AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
 	{

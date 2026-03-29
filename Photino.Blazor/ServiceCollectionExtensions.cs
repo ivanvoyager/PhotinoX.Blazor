@@ -14,7 +14,7 @@ namespace Photino.Blazor
                 .AddOptions<PhotinoBlazorAppConfiguration>()
                 .Configure(opts =>
                 {
-                    opts.AppBaseUri = new Uri(PhotinoWebViewManager.AppBaseUri);
+                    opts.AppBaseUri = PhotinoWebViewManager.AppBaseUri;
                     opts.HostPage = "index.html";
                 });
 
@@ -22,7 +22,7 @@ namespace Photino.Blazor
                 .AddScoped(sp =>
                 {
                     var handler = sp.GetService<PhotinoHttpHandler>()!;
-                    return new HttpClient(handler) { BaseAddress = new Uri(PhotinoWebViewManager.AppBaseUri) };
+                    return new HttpClient(handler) { BaseAddress = PhotinoWebViewManager.AppBaseUri };
                 })
                 .AddSingleton(sp =>
                 {

@@ -17,6 +17,8 @@ namespace Photino.Blazor
     {
         private readonly PhotinoWindow _window;
         private readonly Channel<string> _channel;
+        private readonly SynchronousTaskScheduler _sts;
+        private readonly CancellationTokenSource _cts = new();
 
         // On Windows, we can't use a custom scheme to host the initial HTML,
         // because webview2 won't let you do top-level navigation to such a URL.
@@ -26,7 +28,7 @@ namespace Photino.Blazor
             ? "http"
             : "app";
 
-        public static readonly string AppBaseUri = $"{BlazorAppScheme}://localhost/";
+        public static readonly Uri AppBaseUri = new ($"{BlazorAppScheme}://localhost/");
 
         public PhotinoWebViewManager(PhotinoWindow window, IServiceProvider provider, Dispatcher dispatcher,
             IFileProvider fileProvider, JSComponentConfigurationStore jsComponents, IOptions<PhotinoBlazorAppConfiguration> config)
@@ -34,29 +36,38 @@ namespace Photino.Blazor
         {
             _window = window ?? throw new ArgumentNullException(nameof(window));
 
-            // Create a scheduler that uses one threads.
-            var sts = new SynchronousTaskScheduler();
-
-            _window.WebMessageReceived += (sender, message) =>
-            {
-                // On some platforms, we need to move off the browser UI thread
-                Task.Factory.StartNew(message =>
-                {
-                    // TODO: Fix this. Photino should ideally tell us the URL that the message comes from so we
-                    // know whether to trust it. Currently it's hardcoded to trust messages from any source, including
-                    // if the webview is somehow navigated to an external URL.
-                    var messageOriginUrl = new Uri(AppBaseUri);
-
-                    MessageReceived(messageOriginUrl, (string)message!);
-                }, message, CancellationToken.None, TaskCreationOptions.DenyChildAttach, sts);
-            };
-
             //Create channel and start reader
-            _channel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions { SingleReader = true, SingleWriter = false, AllowSynchronousContinuations = false });
-            Task.Run(messagePump);
+            _channel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                AllowSynchronousContinuations = false
+            });
+
+            // Create a scheduler that uses one threads.
+            _sts = new SynchronousTaskScheduler();
+
+            _window.WebMessageReceived += WebMessageReceived;
+
+            _ = Task.Run(() => MessagePumpAsync(_cts.Token), _cts.Token);
         }
 
-        public Stream? HandleWebRequest(object? sender, string schema, string url, out string contentType)
+        private void WebMessageReceived(object? sender, string message)
+        {
+            // On some platforms, we need to move off the browser UI thread
+            _ = Task.Factory.StartNew(static state =>
+            {
+                (PhotinoWebViewManager wvm, string message) = ((PhotinoWebViewManager, string))state!;
+                // TODO: Fix this. Photino should ideally tell us the URL that the message comes from so we
+                // know whether to trust it. Currently, it's hardcoded to trust messages from any source, including
+                // if the webview is somehow navigated to an external URL.
+                var messageOriginUrl = AppBaseUri;
+
+                wvm.MessageReceived(messageOriginUrl, message);
+            }, (this, message), _cts.Token, TaskCreationOptions.DenyChildAttach, _sts);
+        }
+
+        public Stream? HandleWebRequest(object? sender, string schema, string url, out string? contentType)
         {
             _ = sender;
             _ = schema;
@@ -68,15 +79,15 @@ namespace Photino.Blazor
             //Remove parameters before attempting to retrieve the file. For example: http://localhost/_content/Blazorise/button.js?v=1.0.7.0
             if (url.Contains('?')) url = url.Substring(0, url.IndexOf('?'));
 
-            if (url.StartsWith(AppBaseUri, StringComparison.Ordinal)
+            if (url.StartsWith(AppBaseUri.ToString(), StringComparison.Ordinal)
                 && TryGetResponseContent(url, !hasFileExtension, out _, out _,
                     out var content, out var headers))
             {
-                headers.TryGetValue("Content-Type", out contentType!);
+                headers.TryGetValue("Content-Type", out contentType);
                 return content;
             }
 
-            contentType = null!;
+            contentType = null;
             return null;
         }
 
@@ -87,28 +98,39 @@ namespace Photino.Blazor
 
         protected override void SendMessage(string message)
         {
-            while (!_channel.Writer.TryWrite(message))
-                Thread.Sleep(200);
+            _ = _channel.Writer.WriteAsync(message, _cts.Token);
         }
 
-        async Task messagePump()
+        private async Task MessagePumpAsync(CancellationToken cancellationToken)
         {
             var reader = _channel.Reader;
             try
             {
-                while (true)
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    var message = await reader.ReadAsync();
+                    var message = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
                     _window.SendWebMessage(message);
                 }
             }
+            catch(OperationCanceledException) { }
             catch (ChannelClosedException) { }
         }
 
         protected override ValueTask DisposeAsyncCore()
         {
+            try { _cts.Cancel(); }
+            catch { /* ignored */ }
+
+            _window.WebMessageReceived -= WebMessageReceived;
+
             //complete channel
-            try { _channel.Writer.Complete(); } catch { }
+            try { _channel.Writer.Complete(); }
+            catch (Exception ex)
+            {
+                _window.Log($"Error completing channel: {ex}");
+            }
+
+            _cts.Dispose();
 
             //continue disposing
             return base.DisposeAsyncCore();

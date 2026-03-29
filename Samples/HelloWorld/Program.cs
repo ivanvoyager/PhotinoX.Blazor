@@ -21,7 +21,7 @@ class Program
         // customize window
         app.MainWindow
             .SetIconFile("favicon.ico")
-            .SetTitle("Photino Hello World");
+            .SetTitle("PhotinoX Hello World");
 
         AppDomain.CurrentDomain.UnhandledException += (_, error) =>
         {
