@@ -32,8 +32,6 @@ namespace Photino.Blazor
         };
 
         private readonly PhotinoWindow _window;
-        private readonly int _uiThreadId;
-        private readonly MethodInfo _invokeMethodInfo;//TODO fix it
 
         public PhotinoSynchronizationContext(PhotinoWindow window)
             : this(window, new State())
@@ -44,11 +42,6 @@ namespace Photino.Blazor
         {
             _window = window ?? throw new ArgumentNullException(nameof(window));
             _state = state ?? throw new ArgumentNullException(nameof(state));
-
-            _uiThreadId = (int)typeof(PhotinoWindow).GetField("_managedThreadId", BindingFlags.NonPublic | BindingFlags.Instance)!
-                .GetValue(_window)!;//TODO fix it
-
-            _invokeMethodInfo = typeof(PhotinoWindow).GetMethod("Invoke", BindingFlags.Public | BindingFlags.Instance)!;
         }
 
         private readonly State _state;
@@ -245,25 +238,25 @@ namespace Photino.Blazor
         {
             // Anything run on the sync context should actually be dispatched as far as Photino
             // is concerned, so that it's safe to interact with the native window/WebView.
-            _invokeMethodInfo.Invoke(_window, [
+            _window.Invoke(
                 () =>
             {
                 var original = Current;
                 try
                 {
-                    _state.IsBusy = true;
+                    Interlocked.Increment(ref _state.BusyCount);
                     SetSynchronizationContext(this);
                     d(state);
                 }
                 finally
                 {
-                    _state.IsBusy = false;
+                    Interlocked.Decrement(ref _state.BusyCount);
                     SetSynchronizationContext(original);
 
                     completion?.SetResult();
                 }
             }
-            ]);
+            );
         }
 
         private void ExecuteBackground(WorkItem item)
@@ -300,7 +293,8 @@ namespace Photino.Blazor
 
         private class State
         {
-            public bool IsBusy; // Just for debugging
+            internal int BusyCount;
+            private bool IsBusy => Volatile.Read(ref BusyCount) > 0; // Just for debugging
 #if NET9_0_OR_GREATER
             public readonly Lock Lock = new();
 #else

@@ -54,7 +54,6 @@ internal class Program
                 .RegisterWindowClosingHandler((_, _) =>
                 {
                     CloseAllWindows();
-                    return false;
                 })
         );
 
