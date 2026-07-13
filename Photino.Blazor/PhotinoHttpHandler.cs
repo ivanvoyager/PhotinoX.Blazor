@@ -1,42 +1,67 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
 
-namespace Photino.Blazor
+namespace Photino.Blazor;
+
+/// <summary>
+/// Handles HTTP requests for resources served by a Photino Blazor host.
+/// </summary>
+public sealed class PhotinoHttpHandler : DelegatingHandler
 {
-    public class PhotinoHttpHandler : DelegatingHandler
+    private readonly IPhotinoWebResourceHandler _resourceHandler;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PhotinoHttpHandler"/> class.
+    /// </summary>
+    /// <param name="resourceHandler">The Photino web resource handler.</param>
+    public PhotinoHttpHandler(IPhotinoWebResourceHandler resourceHandler)
+        : this(resourceHandler, null)
     {
-        private readonly PhotinoBlazorApp _app;
+    }
 
-        //use this constructor if a handler is registered in DI to inject dependencies
-        public PhotinoHttpHandler(PhotinoBlazorApp app) : this(app, null)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PhotinoHttpHandler"/> class.
+    /// </summary>
+    /// <param name="resourceHandler">The Photino web resource handler.</param>
+    /// <param name="innerHandler">The inner HTTP handler used for requests not handled by Photino.</param>
+    public PhotinoHttpHandler(IPhotinoWebResourceHandler resourceHandler, HttpMessageHandler? innerHandler)
+    {
+        _resourceHandler = resourceHandler ?? throw new ArgumentNullException(nameof(resourceHandler));
+
+        // The last inner handler in the pipeline must be a real HTTP handler.
+        // Use HttpClientHandler for requests that are not handled by Photino.
+        InnerHandler = innerHandler ?? new HttpClientHandler();
+    }
+
+    /// <inheritdoc />
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        if (request.RequestUri is null)
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+        var content = _resourceHandler.HandleWebRequest(
+            request.RequestUri.AbsoluteUri,
+            out var contentType);
+
+        if (content is not null)
         {
-        }
-
-        //Use this constructor if a handler is created manually.
-        //Otherwise, use DelegatingHandler.InnerHandler public property to set the next handler.
-        public PhotinoHttpHandler(PhotinoBlazorApp app, HttpMessageHandler? innerHandler)
-        {
-            _app = app;
-
-            //the last (inner) handler in the pipeline should be a "real" handler.
-            //To make a HTTP request, create a HttpClientHandler instance.
-            InnerHandler = innerHandler ?? new HttpClientHandler();
-        }
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            var content = _app.WindowManager.HandleWebRequest(null, string.Empty, request.RequestUri!.AbsoluteUri, out var contentType);
-            if (content != null && !string.IsNullOrWhiteSpace(contentType))
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
-                var response = new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StreamContent(content)
-                };
-                response.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
-                return response;
+                RequestMessage = request,
+                Content = new StreamContent(content)
+            };
+
+            if (!string.IsNullOrWhiteSpace(contentType) &&
+                MediaTypeHeaderValue.TryParse(contentType, out var mediaType))
+            {
+                response.Content.Headers.ContentType = mediaType;
             }
 
-            return await base.SendAsync(request, cancellationToken);
+            return response;
         }
+
+        return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
     }
 }

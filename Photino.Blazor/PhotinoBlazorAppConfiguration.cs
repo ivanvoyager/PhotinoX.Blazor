@@ -1,9 +1,17 @@
-namespace Photino.Blazor
-{
-    public class PhotinoBlazorAppConfiguration
-    {
-        public Uri AppBaseUri { get; set; } = null!;
+namespace Photino.Blazor;
 
-        public string HostPage { get; set; } = null!;
-    }
+/// <summary>
+/// Configures the Photino Blazor application host.
+/// </summary>
+public class PhotinoBlazorAppConfiguration
+{
+    /// <summary>
+    /// Gets or sets the base URI used by the Blazor WebView host.
+    /// </summary>
+    public Uri AppBaseUri { get; set; } = PhotinoWebViewManager.AppBaseUri;
+
+    /// <summary>
+    /// Gets or sets the host page served as the Blazor application entry point.
+    /// </summary>
+    public string HostPage { get; set; } = "index.html";
 }

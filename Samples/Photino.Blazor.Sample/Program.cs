@@ -3,32 +3,33 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Photino.Blazor.Sample;
 
-class Program
+internal static class Program
 {
     [STAThread]
-    static void Main(string[] args)
+    private static void Main(string[] args)
     {
         var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
 
         appBuilder.Services
             .AddLogging();
 
-        // register root component and selector
+        // Register the root component for the main window.
         appBuilder.RootComponents.Add<App>("app");
 
         var app = appBuilder.Build();
 
-        // customize window
-        app.MainWindow
+        // Customize the native Photino window.
+        app.MainBlazorWindow.Window
             .SetIconFile("favicon.ico")
             .SetTitle("PhotinoX Blazor Sample");
 
-        AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
+        AppDomain.CurrentDomain.UnhandledException += (_, error) =>
         {
-            app.MainWindow.ShowMessage("Fatal exception", error.ExceptionObject.ToString());
+            app.MainBlazorWindow.Window.ShowMessage(
+                "Fatal exception",
+                error.ExceptionObject?.ToString() ?? "Unknown fatal exception.");
         };
 
         app.Run();
-
     }
 }

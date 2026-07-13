@@ -17,31 +17,79 @@ Blazor integration for [**PhotinoX**](https://github.com/ivanvoyager/PhotinoX) (
 
 ## Quick start
 
-```C#
+```csharp
 [STAThread]
 static void Main(string[] args)
 {
-	var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
+    var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
 
-	appBuilder.Services
-		.AddLogging();
+    appBuilder.Services
+        .AddLogging();
 
-	// register root component and selector
-	appBuilder.RootComponents.Add<App>("app");
+    // Register the root component and selector for the main window.
+    appBuilder.RootComponents.Add<App>("app");
 
-	var app = appBuilder.Build();
+    var app = appBuilder.Build();
 
-	// customize window
-	app.MainWindow
-		.SetIconFile("favicon.ico")
-		.SetTitle("PhotinoX Blazor Sample");
+    // Customize the native Photino window.
+    app.MainBlazorWindow.Window
+        .SetIconFile("favicon.ico")
+        .SetTitle("PhotinoX Blazor Sample");
 
-	AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
-	{
-		app.MainWindow.ShowMessage("Fatal exception", error.ExceptionObject.ToString());
-	};
+    AppDomain.CurrentDomain.UnhandledException += (_, error) =>
+    {
+        app.MainBlazorWindow.Window.ShowMessage(
+            "Fatal exception",
+            error.ExceptionObject?.ToString() ?? "Unknown fatal exception.");
+    };
 
-	app.Run();
+    app.Run();
+}
+```
+
+## Application and window model
+
+`PhotinoX.Blazor` separates application-level services from window-level Blazor hosting:
+
+- `PhotinoBlazorApp` owns the shared service provider and application lifecycle.
+- `PhotinoBlazorWindow` represents one native Photino window hosting Blazor content.
+- Each `PhotinoBlazorWindow` has its own root components, WebView manager, dispatcher, and message pipeline.
+
+This makes multi-window scenarios explicit and avoids sharing window-specific Blazor state between native windows.
+
+Root components should be configured before the corresponding `PhotinoBlazorWindow.Show()` call.
+
+## Multiple windows
+
+```csharp
+[STAThread]
+static void Main(string[] args)
+{
+    var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
+
+    appBuilder.Services
+        .AddLogging();
+
+    appBuilder.RootComponents.Add<Window1>("app");
+
+    var app = appBuilder.Build();
+
+    var window1 = app.MainBlazorWindow;
+    window1.Window
+        .SetTitle("Window 1")
+        .Load(new Uri("window1.html", UriKind.Relative));
+
+    var window2 = app.CreateWindow<Window2>("app");
+    window2.Window
+        .SetTitle("Window 2")
+        .Load(new Uri("window2.html", UriKind.Relative));
+
+    window1.Window.RegisterWindowCreatedHandler((_, _) =>
+    {
+        window2.Show();
+    });
+
+    app.Run();
 }
 ```
 
@@ -49,7 +97,7 @@ static void Main(string[] args)
 
 - [**PhotinoX**](https://github.com/ivanvoyager/PhotinoX) - .NET wrapper around the native layer.
 - [**PhotinoX.Native**](https://github.com/ivanvoyager/PhotinoX.Native) - native binaries for Windows/macOS/Linux.
-- [**PhotinoX.Server**](https://github.com/ivanvoyager/PhotinoX.Server) - optional static-file server (avoids CORS/ESM issues).
+- [**PhotinoX.Server**](https://github.com/ivanvoyager/PhotinoX.Server) - optional local static-file server for SPA/static assets.
 - [**PhotinoX.Samples**](https://github.com/ivanvoyager/PhotinoX.Samples) - sample projects showcasing common scenarios.
 
 ---
@@ -59,7 +107,7 @@ static void Main(string[] args)
 ```bash
 dotnet add package PhotinoX.Blazor
 ```
-(Ensure `PhotinoX.Native` is available at runtime for your target RID.)
+`PhotinoX.Native` provides the native WebView host binaries and must be available for the target runtime identifier.
 > Package targets **net8.0; net9.0; net10.0**. CI builds use the latest **.NET 10 SDK**.
 
 ## Samples
