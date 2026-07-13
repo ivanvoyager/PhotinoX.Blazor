@@ -6,68 +6,70 @@ using Photino.NET;
 
 namespace Photino.Blazor.MultiWindowSample;
 
-internal class Program
+internal static class Program
 {
-    private record WindowCreationArgs(Type RootComponentType, string Title, Uri HtmlPath);
-
     private static readonly List<PhotinoWindow> s_windows = [];
+    private static bool s_isClosingAllWindows;
 
     [STAThread]
     private static void Main(string[] args)
     {
-        CreateWindows(
-            new Queue<WindowCreationArgs>(new[]
-            {
-                new WindowCreationArgs(typeof(Window1), "Window 1", new Uri("window1.html", UriKind.Relative)),
-                new WindowCreationArgs(typeof(Window2), "Window 2", new Uri("window2.html", UriKind.Relative)),
-            }),
-            args
-        );
-    }
-
-    private static void CreateWindows(
-        Queue<WindowCreationArgs> windowsToCreate,
-        string[] args
-    )
-    {
-        if (!windowsToCreate.TryDequeue(out var windowCreationArgs))
-        {
-            return;
-        }
-
         var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
 
-        // register services
         appBuilder.Services.AddLogging();
 
-        // register root component and selector
-        appBuilder.RootComponents.Add(windowCreationArgs.RootComponentType, "app");
+        appBuilder.RootComponents.Add<Window1>("app");
 
         var app = appBuilder.Build();
 
-        // customize window
-        s_windows.Add(
-            app.MainWindow
-                .SetTitle(windowCreationArgs.Title)
-                .Load(windowCreationArgs.HtmlPath)
-                .RegisterWindowCreatedHandler((_, _) => CreateWindows(windowsToCreate, args))
-                .RegisterWindowClosingHandler((_, _) =>
-                {
-                    CloseAllWindows();
-                })
-        );
+        var window1 = app.MainBlazorWindow;
+        window1.Window
+            .SetTitle("Window 1")
+            .Load(new Uri("window1.html", UriKind.Relative));
 
-        AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
+        var window2 = app.CreateWindow<Window2>("app");
+        window2.Window
+            .SetTitle("Window 2")
+            .Load(new Uri("window2.html", UriKind.Relative));
+
+        RegisterWindow(window1.Window);
+        RegisterWindow(window2.Window);
+
+        window1.Window.RegisterWindowCreatedHandler((_, _) =>
         {
-            app.MainWindow.ShowMessage("Fatal exception", error.ExceptionObject.ToString());
+            window2.Show();
+        });
+
+        AppDomain.CurrentDomain.UnhandledException += (_, error) =>
+        {
+            var message = error.ExceptionObject?.ToString() ?? "Unknown fatal exception.";
+            var window = s_windows.Count > 0 ? s_windows[0] : window1.Window;
+
+            window.ShowMessage("Fatal exception", message);
         };
 
         app.Run();
     }
 
+    private static void RegisterWindow(PhotinoWindow window)
+    {
+        s_windows.Add(window);
+
+        window.RegisterWindowClosedHandler((_, _) =>
+        {
+            s_windows.Remove(window);
+            CloseAllWindows();
+        });
+    }
+
     private static void CloseAllWindows()
     {
-        foreach (var window in s_windows)
+        if (s_isClosingAllWindows)
+            return;
+
+        s_isClosingAllWindows = true;
+
+        foreach (var window in s_windows.ToArray())
         {
             window.Close();
         }
