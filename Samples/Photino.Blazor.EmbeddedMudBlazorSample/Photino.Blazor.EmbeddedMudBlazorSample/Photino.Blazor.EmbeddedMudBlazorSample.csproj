@@ -15,32 +15,27 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.9" />
-    <PackageReference Include="MudBlazor" Version="9.6.0" />
+    <PackageReference Include="MudBlazor" Version="9.7.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Photino.Blazor\PhotinoX.Blazor.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">
+  <ItemGroup Condition="$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win'))">
     <RdXmlFile Include="rd.xml" />
     <RdXmlFile Include="Microsoft.AspNetCore.Components.Web.rd.xml" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="wwwroot\**" />
-    <EmbeddedResource Include="..\Common\bin\Release\net8.0\publish\**" />
-    <EmbeddedResource Remove="..\Common\bin\Release\net8.0\publish\*.*" />
+    <EmbeddedResource Include="..\Common\bin\Release\$(TargetFramework)\publish\**" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Update="wwwroot\**">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="wwwroot\favicon.ico" />
   </ItemGroup>
 
   <ItemGroup>

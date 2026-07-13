@@ -27,7 +27,7 @@ Maintained fork of Photino.Blazor.</Description>
 	</ItemGroup>
 
   <ItemGroup Condition="'$(PhotinoX_UseLocalProjects)' != 'true'">
-    <PackageReference Include="PhotinoX" Version="4.2.1" />
+    <PackageReference Include="PhotinoX" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PhotinoX_UseLocalProjects)' == 'true'">
