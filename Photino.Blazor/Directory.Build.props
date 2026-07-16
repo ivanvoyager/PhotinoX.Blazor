@@ -32,6 +32,6 @@
   </ItemGroup>
 
   <!-- Imports -->
-  <Import Project="..\Directory.Build.props" />
+  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
 
 </Project>

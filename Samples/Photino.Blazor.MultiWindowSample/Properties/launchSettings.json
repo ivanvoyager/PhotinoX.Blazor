@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Photino.Blazor.MultiWindowSample": {
+      "commandName": "Project",
+      "debugEngines": "managed,native"
+    }
+  }
+}
