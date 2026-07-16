@@ -85,7 +85,7 @@ public sealed class PhotinoBlazorApp
 
         var rootComponents = new RootComponentsCollection();
         var synchronizationContext = new PhotinoSynchronizationContext(window);
-        var dispatcher = new PhotinoDispatcher(synchronizationContext);
+        var dispatcher = new PhotinoBlazorDispatcher(synchronizationContext);
 
         var resourceHandler = new PhotinoWindowResourceHandler();
         var windowServices = new PhotinoWindowServiceProvider(Services, resourceHandler);
