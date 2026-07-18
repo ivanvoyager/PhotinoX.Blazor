@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Photino.NET;
-using CancelEventArgs = System.ComponentModel.CancelEventArgs;
 
 namespace Photino.Blazor;
 
@@ -12,7 +11,7 @@ namespace Photino.Blazor;
 /// </summary>
 public sealed class PhotinoBlazorApp
 {
-    private readonly List<PhotinoBlazorWindow> _windows = [];
+    private readonly List<PhotinoBlazorWindow> _blazorWindows = [];
     private readonly List<Task> _windowDisposeTasks = [];
     private bool _isRunning;
     private bool _isDisposed;
@@ -32,12 +31,17 @@ public sealed class PhotinoBlazorApp
     /// </summary>
     public PhotinoWindow MainWindow => MainBlazorWindow.Window;
 
+    public PhotinoApplication Application { get; private set; } = null!;
+
     internal void Initialize(IServiceProvider services, RootComponentsCollection rootComponents)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(rootComponents);
 
         Services = services;
+
+        Application = PhotinoApplication.Current;
+        Application.ShutdownMode = PhotinoShutdownMode.OnMainWindowClose;
 
         MainBlazorWindow = CreateWindowCore(parent: null);
 
@@ -84,7 +88,11 @@ public sealed class PhotinoBlazorApp
             : new PhotinoWindow(parent);
 
         var rootComponents = new RootComponentsCollection();
-        var synchronizationContext = new PhotinoSynchronizationContext(window);
+
+        var synchronizationContext = new PhotinoSynchronizationContext(
+            window,
+            PhotinoApplication.Current.Dispatcher);
+
         var dispatcher = new PhotinoBlazorDispatcher(synchronizationContext);
 
         var resourceHandler = new PhotinoWindowResourceHandler();
@@ -106,17 +114,17 @@ public sealed class PhotinoBlazorApp
             PhotinoWebViewManager.BlazorAppScheme,
             blazorWindow.HandleWebRequest);
 
-        lock (_windows)
+        lock (_blazorWindows)
         {
-            _windows.Add(blazorWindow);
+            _blazorWindows.Add(blazorWindow);
         }
 
         window.RegisterWindowClosedHandler((_, _) =>
         {
             Task disposeTask;
-            lock (_windows)
+            lock (_blazorWindows)
             {
-                _windows.Remove(blazorWindow);
+                _blazorWindows.Remove(blazorWindow);
                 disposeTask = blazorWindow.DisposeAsyncCore().AsTask();
                 _windowDisposeTasks.Add(disposeTask);
             }
@@ -168,59 +176,24 @@ public sealed class PhotinoBlazorApp
     /// <summary>
     /// Shows the main window and starts the Photino message loop.
     /// </summary>
-    public void Run()
+    public int Run()
     {
         ThrowIfDisposed();
 
         if (_isRunning)
-            throw new InvalidOperationException("The Photino Blazor application is already running.");
+            ThrowApplicationAlreadyRunning();
 
         _isRunning = true;
         try
         {
-            MainWindow.RegisterWindowClosingHandler(OnMainWindowClosing);
             MainBlazorWindow.Show();
+            return Application.Run(MainWindow);
         }
         finally
         {
             _isRunning = false;
             DisposeServices();
         }
-    }
-
-    private void OnMainWindowClosing(object? sender, CancelEventArgs e)
-    {
-        if (e.Cancel)
-            return;
-
-        var windowsToClose = GetWindowsToClose(MainBlazorWindow);
-
-        if (windowsToClose.Count == 0)
-        {
-            return;
-        }
-
-        foreach (var window in windowsToClose)
-        {
-            window.Window.Close();//TODO force closing
-        }
-    }
-
-    private List<PhotinoBlazorWindow> GetWindowsToClose(PhotinoBlazorWindow mainBlazorWindow)
-    {
-        List<PhotinoBlazorWindow> windowsToClose;
-        lock (_windows)
-        {
-            windowsToClose = new List<PhotinoBlazorWindow>(_windows.Count);
-            foreach (var window in _windows)
-            {
-                if (ReferenceEquals(window, mainBlazorWindow))
-                    continue;
-
-                windowsToClose.Add(window);
-            }
-        }
-        return windowsToClose;
     }
 
     private void DisposeServices()
@@ -232,12 +205,12 @@ public sealed class PhotinoBlazorApp
 
         Task[] windowDisposeTasks;
 
-        lock (_windows)
+        lock (_blazorWindows)
         {
-            foreach (var window in _windows.ToArray())
+            foreach (var window in _blazorWindows.ToArray())
                 _windowDisposeTasks.Add(window.DisposeAsyncCore().AsTask());
 
-            _windows.Clear();
+            _blazorWindows.Clear();
             windowDisposeTasks = _windowDisposeTasks.ToArray();
         }
 
@@ -264,5 +237,10 @@ public sealed class PhotinoBlazorApp
     {
         if (_isDisposed)
             throw new ObjectDisposedException(nameof(PhotinoBlazorApp));
+    }
+
+    private static void ThrowApplicationAlreadyRunning()
+    {
+        throw new InvalidOperationException("The Photino Blazor application is already running.");
     }
 }

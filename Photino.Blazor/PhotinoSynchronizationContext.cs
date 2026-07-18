@@ -2,13 +2,14 @@
 
 namespace Photino.Blazor;
 // Most UI platforms have a built-in SynchronizationContext/Dispatcher, e.g. Windows Forms and WPF,
-// which WebView can normally use directly. Photino does not provide one.
+// which Blazor can normally use directly.
 //
-// This synchronization context serializes synchronous Blazor work items and dispatches work through
-// PhotinoWindow.Invoke after the native Photino window is created.
+// Photino provides an application dispatcher, but Blazor still needs a SynchronizationContext
+// that serializes renderer work items, flows ExecutionContext, and sets SynchronizationContext.Current
+// while executing component work.
 //
 // During pre-native initialization, or after native dispatch has been disabled during shutdown,
-// work items are executed directly instead of going through the native window.
+// work items are executed directly instead of going through the native dispatcher.
 internal sealed class PhotinoSynchronizationContext : SynchronizationContext
 {
     private static readonly ContextCallback s_executionContextThunk = state =>
@@ -24,16 +25,18 @@ internal sealed class PhotinoSynchronizationContext : SynchronizationContext
     };
 
     private readonly PhotinoWindow _window;
+    private readonly PhotinoDispatcher _dispatcher;
     private volatile bool _nativeDispatchEnabled = true;
 
-    internal PhotinoSynchronizationContext(PhotinoWindow window)
-        : this(window, new State())
+    internal PhotinoSynchronizationContext(PhotinoWindow window, PhotinoDispatcher dispatcher)
+        : this(window, dispatcher, new State())
     {
     }
 
-    private PhotinoSynchronizationContext(PhotinoWindow window, State state)
+    private PhotinoSynchronizationContext(PhotinoWindow window, PhotinoDispatcher dispatcher, State state)
     {
         _window = window ?? throw new ArgumentNullException(nameof(window));
+        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         _state = state ?? throw new ArgumentNullException(nameof(state));
     }
 
@@ -172,7 +175,7 @@ internal sealed class PhotinoSynchronizationContext : SynchronizationContext
     // shallow copy
     public override SynchronizationContext CreateCopy()
     {
-        return new PhotinoSynchronizationContext(_window, _state);
+        return new PhotinoSynchronizationContext(_window, _dispatcher, _state);
     }
 
     // Similar to Post, but it can run the work item synchronously if the context is not busy.
@@ -237,7 +240,12 @@ internal sealed class PhotinoSynchronizationContext : SynchronizationContext
 
         // Anything run on the sync context should actually be dispatched as far as Photino
         // is concerned, so that it's safe to interact with the native window/WebView.
-        _window.Invoke(Execute);
+        if (!_dispatcher.Invoke(Execute))
+        {
+            var exception = new InvalidOperationException("Failed to execute the Blazor work item on the Photino dispatcher.");
+            completion?.SetException(exception);
+            throw exception;
+        }
 
         void Execute()
         {
