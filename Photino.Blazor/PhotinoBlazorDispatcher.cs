@@ -2,11 +2,11 @@
 
 namespace Photino.Blazor;
 
-internal sealed class PhotinoDispatcher : Dispatcher
+internal sealed class PhotinoBlazorDispatcher : Dispatcher
 {
     private readonly PhotinoSynchronizationContext _context;
 
-    public PhotinoDispatcher(PhotinoSynchronizationContext context)
+    public PhotinoBlazorDispatcher(PhotinoSynchronizationContext context)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _context.UnhandledException += (_, e) => OnUnhandledException(e);
@@ -42,7 +42,7 @@ internal sealed class PhotinoDispatcher : Dispatcher
             return Task.FromResult(workItem());
         }
 
-        return _context.InvokeAsync<TResult>(workItem);
+        return _context.InvokeAsync(workItem);
     }
 
     public override Task<TResult> InvokeAsync<TResult>(Func<Task<TResult>> workItem)
@@ -52,6 +52,6 @@ internal sealed class PhotinoDispatcher : Dispatcher
             return workItem();
         }
 
-        return _context.InvokeAsync<TResult>(workItem);
+        return _context.InvokeAsync(workItem);
     }
 }
