@@ -1,3 +1,5 @@
+[![PhotinoX Logo](https://raw.githubusercontent.com/ivanvoyager/PhotinoX/refs/heads/master/assets/photinox-logo.png)](https://github.com/ivanvoyager/PhotinoX)
+
 # PhotinoX.Blazor
 
 [![NuGet Version](https://img.shields.io/nuget/v/PhotinoX.Blazor.svg)](https://www.nuget.org/packages/PhotinoX.Blazor)
@@ -53,11 +55,25 @@ static void Main(string[] args)
 
 - `PhotinoBlazorApp` owns the shared service provider and application lifecycle.
 - `PhotinoBlazorWindow` represents one native Photino window hosting Blazor content.
-- Each `PhotinoBlazorWindow` has its own root components, WebView manager, dispatcher, and message pipeline.
+- Each `PhotinoBlazorWindow` has its own root components, WebView manager, Blazor dispatcher/synchronization context, and message pipeline.
+
+Window-scoped services are isolated through a per-window service provider, so `HttpClient`, resource handling, root components, and WebView manager state are scoped to each window.
 
 This makes multi-window scenarios explicit and avoids sharing window-specific Blazor state between native windows.
 
 Root components should be configured before the corresponding `PhotinoBlazorWindow.Show()` call.
+
+## Application scheme
+
+`PhotinoX.Blazor` uses the `app` custom scheme on Windows, macOS, and Linux. The upstream Windows `http` workaround is no longer used because `PhotinoX.Native` now supports custom scheme navigation on WebView2.
+
+## Key differences from Photino.Blazor
+
+| Area | Photino.Blazor | PhotinoX.Blazor |
+|---|---|---|
+| Application model | Main-window host built around `PhotinoWindow.WaitForClose()`. | Runs on top of the `PhotinoApplication` model. |
+| Window hosting | Main window, root components, WebView manager, and services are mostly application-level. | Each `PhotinoBlazorWindow` has window-scoped root components, resource handling, WebView manager state, and Blazor dispatcher/synchronization context. |
+| Application scheme | Uses `http` on Windows and `app` on Linux/macOS. | Uses `app` on all supported platforms. |
 
 ## Multiple windows
 
@@ -77,14 +93,14 @@ static void Main(string[] args)
     var window1 = app.MainBlazorWindow;
     window1.Window
         .SetTitle("Window 1")
-        .Load(new Uri("window1.html", UriKind.Relative));
+        .Load("window1.html");
 
     var window2 = app.CreateWindow<Window2>("app");
     window2.Window
         .SetTitle("Window 2")
-        .Load(new Uri("window2.html", UriKind.Relative));
+        .Load("window2.html");
 
-    window1.Window.RegisterWindowCreatedHandler((_, _) =>
+    window1.Window.RegisterCreatedHandler((_, _) =>
     {
         window2.Show();
     });

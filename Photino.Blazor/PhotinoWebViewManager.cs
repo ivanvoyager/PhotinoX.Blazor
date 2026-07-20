@@ -21,13 +21,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
 
     private static readonly TimeSpan s_rendererDisposeTimeout = TimeSpan.FromSeconds(5);
 
-    // On Windows, we can't use a custom scheme to host the initial HTML,
-    // because webview2 won't let you do top-level navigation to such a URL.
-    // On Linux/Mac, we must use a custom scheme, because their webviews
-    // don't have a way to intercept http:// scheme requests.
-    internal static readonly string BlazorAppScheme = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-        ? "http"
-        : "app";
+    internal const string BlazorAppScheme = "app";
 
     internal static readonly Uri AppBaseUri = new ($"{BlazorAppScheme}://localhost/");
 

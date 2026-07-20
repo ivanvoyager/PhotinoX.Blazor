@@ -116,7 +116,7 @@ public sealed class PhotinoBlazorApp
             _blazorWindows.Add(blazorWindow);
         }
 
-        window.RegisterWindowClosedHandler((_, _) =>
+        window.RegisterClosedHandler((_, _) =>
         {
             Task disposeTask;
             lock (_blazorWindows)

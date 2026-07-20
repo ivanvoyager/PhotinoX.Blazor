@@ -35,7 +35,7 @@ internal static class Program
         RegisterWindow(window1.Window);
         RegisterWindow(window2.Window);
 
-        window1.Window.RegisterWindowCreatedHandler((_, _) =>
+        window1.Window.RegisterCreatedHandler((_, _) =>
         {
             window2.Show();
         });
@@ -55,7 +55,7 @@ internal static class Program
     {
         s_windows.Add(window);
 
-        window.RegisterWindowClosedHandler((_, _) =>
+        window.RegisterClosedHandler((_, _) =>
         {
             s_windows.Remove(window);
             CloseAllWindows();
