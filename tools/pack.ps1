@@ -2,9 +2,9 @@
 #   .\pack.ps1				# stable package, e.g. 5.0.0
 #   .\pack.ps1 -VersionSuffix preview.1	# prerelease package, e.g. 5.0.0-preview.1
 #
-# From .bat:
-#   pack.bat
-#   pack.bat -VersionSuffix preview.1
+# From .cmd:
+#   pack.cmd
+#   pack.cmd -VersionSuffix preview.1
 
 param(
     [string]$VersionSuffix = ""
