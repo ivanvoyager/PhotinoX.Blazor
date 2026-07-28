@@ -226,32 +226,41 @@ internal sealed class PhotinoSynchronizationContext : SynchronizationContext
 
     private void ExecuteSynchronously(
         TaskCompletionSource? completion,
-        SendOrPostCallback d,
+        SendOrPostCallback callback,
         object? state)
     {
+        var execution = (
+            Context: this,
+            Completion: completion,
+            Callback: callback,
+            State: state);
+
         // Anything run on the sync context should be dispatched through Photino when
         // dispatch is available, so native window/WebView access stays on the dispatcher thread.
-        if (!_dispatcher.Invoke(Execute))
+        if (!_dispatcher.TryInvoke(static execution =>
+            {
+                execution.Context.ExecuteSynchronouslyCore(execution.Completion, execution.Callback, execution.State);
+            }, execution))
         {
-            Execute();
+            ExecuteSynchronouslyCore(completion, callback, state);
         }
+    }
 
-        void Execute()
+    private void ExecuteSynchronouslyCore(TaskCompletionSource? completion, SendOrPostCallback callback, object? state)
+    {
+        var original = Current;
+        try
         {
-            var original = Current;
-            try
-            {
-                Interlocked.Increment(ref _state.BusyCount);
-                SetSynchronizationContext(this);
-                d(state);
-            }
-            finally
-            {
-                Interlocked.Decrement(ref _state.BusyCount);
-                SetSynchronizationContext(original);
+            Interlocked.Increment(ref _state.BusyCount);
+            SetSynchronizationContext(this);
+            callback(state);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _state.BusyCount);
+            SetSynchronizationContext(original);
 
-                completion?.SetResult();
-            }
+            completion?.SetResult();
         }
     }
 
