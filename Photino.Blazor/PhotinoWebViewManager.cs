@@ -1,4 +1,6 @@
-﻿using System.Runtime.ExceptionServices;
+﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ExceptionServices;
 using System.Threading.Channels;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -17,6 +19,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
     private readonly Task _outgoingMessagesTask;
     private readonly Task _incomingMessagesTask;
     private readonly CancellationTokenSource _cts = new();
+    private readonly CancellationToken _cancellationToken;
     private int _messagePumpsStopped;
 
     private static readonly TimeSpan s_rendererDisposeTimeout = TimeSpan.FromSeconds(5);
@@ -55,8 +58,10 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         _window.WebMessageReceived += WebMessageReceived;
         _window.Closed += WindowClosed;
 
-        _outgoingMessagesTask = Task.Run(() => ProcessOutgoingMessagesAsync(_cts.Token), _cts.Token);
-        _incomingMessagesTask = Task.Run(() => ProcessIncomingMessagesAsync(_cts.Token), _cts.Token);
+        _cancellationToken = _cts.Token;
+
+        _outgoingMessagesTask = Task.Run(() => ProcessOutgoingMessagesAsync(_cancellationToken), _cancellationToken);
+        _incomingMessagesTask = Task.Run(() => ProcessIncomingMessagesAsync(_cancellationToken), _cancellationToken);
     }
 
     private bool AreMessagePumpsStopped => Volatile.Read(ref _messagePumpsStopped) != 0;
@@ -98,11 +103,17 @@ internal sealed class PhotinoWebViewManager : WebViewManager
 
     protected override void SendMessage(string message)
     {
-        if (AreMessagePumpsStopped)
-            return;
+        if (AreMessagePumpsStopped || _window.IsClosed)
+        {
+#if DEBUG
+            // Useful for testing renderer NotifyUnhandledException shutdown behavior.
+            // if (IsBlazorUnhandledExceptionNotification(message)) return;
+#endif
+            ThrowWebViewMessagePumpStopped();
+        }
 
-        if (!_outgoingMessages.Writer.TryWrite(message) && !AreMessagePumpsStopped)
-            Log("Failed to enqueue outgoing WebView message because the message pump is closed.");
+        if (!_outgoingMessages.Writer.TryWrite(message))
+            ThrowWebViewMessagePumpStopped();
     }
 
     private void WebMessageReceived(object? sender, string message)
@@ -184,6 +195,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         }
         catch (OperationCanceledException)
         {
+            Debug.Fail("Incoming WebView message pump was canceled before observing channel completion.");
         }
     }
 
@@ -199,6 +211,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         _outgoingMessages.Writer.TryComplete();
         _incomingMessages.Writer.TryComplete();
 
+        // Cancel after completion to keep pump shutdown orderly.
         try
         {
             _cts.Cancel();
@@ -212,11 +225,16 @@ internal sealed class PhotinoWebViewManager : WebViewManager
     protected override async ValueTask DisposeAsyncCore()
     {
         ExceptionDispatchInfo? disposeException = null;
-        var suppressDisposeTimeoutLog = AreMessagePumpsStopped;
+
+        StopAcceptingMessages();
 
         try
         {
-            await DisposeBaseAsyncWithTimeout(suppressDisposeTimeoutLog).ConfigureAwait(false);
+            await DisposeBaseAsyncWithTimeout().ConfigureAwait(false);
+        }
+        catch (Exception ex) when (IsExpectedWebViewShutdownException(ex))
+        {
+            // Expected during shutdown after the WebView transport has been closed.
         }
         catch (Exception ex)
         {
@@ -225,19 +243,14 @@ internal sealed class PhotinoWebViewManager : WebViewManager
 
         try
         {
-            StopAcceptingMessages();
-
-            try
-            {
-                await Task.WhenAll(_outgoingMessagesTask, _incomingMessagesTask).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception ex)
-            {
-                Log($"Error stopping message pumps: {ex}");
-            }
+            await Task.WhenAll(_outgoingMessagesTask, _incomingMessagesTask).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Log($"Error stopping message pumps: {ex}");
         }
         finally
         {
@@ -247,7 +260,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         disposeException?.Throw();
     }
 
-    private async Task DisposeBaseAsyncWithTimeout(bool suppressTimeoutLog)
+    private async Task DisposeBaseAsyncWithTimeout()
     {
         var disposeTask = base.DisposeAsyncCore().AsTask();
 
@@ -261,14 +274,12 @@ internal sealed class PhotinoWebViewManager : WebViewManager
             return;
         }
 
-        if (!suppressTimeoutLog)
-            Log($"Timed out while disposing Blazor renderer after {s_rendererDisposeTimeout}.");
+        Log($"Timed out while disposing Blazor renderer after {s_rendererDisposeTimeout}.");
 
         _ = disposeTask.ContinueWith(
             task =>
             {
-                if (!suppressTimeoutLog)
-                    Log($"Blazor renderer disposal failed after timeout: {task.Exception}");
+                Log($"Blazor renderer disposal failed after timeout: {task.Exception}");
             },
             CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted,
@@ -278,5 +289,41 @@ internal sealed class PhotinoWebViewManager : WebViewManager
     internal void Log(string message)
     {
         _window.Log(message);
+    }
+
+#if DEBUG
+    private static bool IsBlazorUnhandledExceptionNotification(string message)
+    {
+        //Microsoft.AspNetCore.Components.WebView.IpcCommon.Serialize(string messageType, object[] args)
+        return message.StartsWith("__bwv:[\"NotifyUnhandledException\",", StringComparison.Ordinal);
+    }
+#endif
+
+    private bool IsExpectedWebViewShutdownException(Exception exception)
+    {
+        if (exception is OperationCanceledException canceledException)
+            return canceledException.CancellationToken == _cancellationToken;
+
+        if (exception is AggregateException aggregateException)
+        {
+            if (aggregateException.InnerExceptions.Count == 0)
+                return false;
+
+            foreach (var innerException in aggregateException.InnerExceptions)
+            {
+                if (!IsExpectedWebViewShutdownException(innerException))
+                    return false;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    [DoesNotReturn]
+    private void ThrowWebViewMessagePumpStopped()
+    {
+        throw new OperationCanceledException("The Photino WebView message pump has been stopped.", _cancellationToken);
     }
 }
