@@ -116,12 +116,12 @@ internal sealed class PhotinoWebViewManager : WebViewManager
             ThrowWebViewMessagePumpStopped();
     }
 
-    private void WebMessageReceived(object? sender, string message)
+    private void WebMessageReceived(object? sender, WebMessageReceivedEventArgs e)
     {
         if (AreMessagePumpsStopped)
             return;
 
-        if (!_incomingMessages.Writer.TryWrite(message) && !AreMessagePumpsStopped)
+        if (!_incomingMessages.Writer.TryWrite(e.Message) && !AreMessagePumpsStopped)
             Log("Failed to enqueue incoming WebView message because the message pump is closed.");
     }
 
