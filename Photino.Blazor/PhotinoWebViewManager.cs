@@ -1,5 +1,4 @@
 ﻿using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -18,6 +17,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
     private readonly Task _outgoingMessagesTask;
     private readonly Task _incomingMessagesTask;
     private readonly CancellationTokenSource _cts = new();
+    private int _messagePumpsStopped;
 
     private static readonly TimeSpan s_rendererDisposeTimeout = TimeSpan.FromSeconds(5);
 
@@ -53,10 +53,13 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         });
 
         _window.WebMessageReceived += WebMessageReceived;
+        _window.Closed += WindowClosed;
 
         _outgoingMessagesTask = Task.Run(() => ProcessOutgoingMessagesAsync(_cts.Token), _cts.Token);
         _incomingMessagesTask = Task.Run(() => ProcessIncomingMessagesAsync(_cts.Token), _cts.Token);
     }
+
+    private bool AreMessagePumpsStopped => Volatile.Read(ref _messagePumpsStopped) != 0;
 
     internal Stream? HandleWebRequestCore(string url, out string? contentType)
     {
@@ -95,14 +98,25 @@ internal sealed class PhotinoWebViewManager : WebViewManager
 
     protected override void SendMessage(string message)
     {
-        if (!_outgoingMessages.Writer.TryWrite(message))
+        if (AreMessagePumpsStopped)
+            return;
+
+        if (!_outgoingMessages.Writer.TryWrite(message) && !AreMessagePumpsStopped)
             Log("Failed to enqueue outgoing WebView message because the message pump is closed.");
     }
 
     private void WebMessageReceived(object? sender, string message)
     {
-        if (!_incomingMessages.Writer.TryWrite(message))
+        if (AreMessagePumpsStopped)
+            return;
+
+        if (!_incomingMessages.Writer.TryWrite(message) && !AreMessagePumpsStopped)
             Log("Failed to enqueue incoming WebView message because the message pump is closed.");
+    }
+
+    private void WindowClosed(object? sender, EventArgs e)
+    {
+        StopAcceptingMessages();
     }
 
     private async Task ProcessOutgoingMessagesAsync(CancellationToken cancellationToken)
@@ -115,9 +129,20 @@ internal sealed class PhotinoWebViewManager : WebViewManager
             {
                 while (reader.TryRead(out var message))
                 {
+                    if (AreMessagePumpsStopped)
+                        return;
+
                     try
                     {
-                        _window.SendWebMessage(message);
+                        await _window.SendWebMessageAsync(message, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                    catch (InvalidOperationException) when (AreMessagePumpsStopped || _window.IsClosed)
+                    {
+                        return;
                     }
                     catch (Exception ex)
                     {
@@ -141,6 +166,9 @@ internal sealed class PhotinoWebViewManager : WebViewManager
             {
                 while (reader.TryRead(out var message))
                 {
+                    if (AreMessagePumpsStopped)
+                        return;
+
                     try
                     {
                         // TODO: Photino should provide the source URL for the message so this can be validated.
@@ -159,13 +187,36 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         }
     }
 
-    protected override async ValueTask DisposeAsyncCore()
+    private void StopAcceptingMessages()
     {
-        ExceptionDispatchInfo? disposeException = null;
+        if (Interlocked.Exchange(ref _messagePumpsStopped, 1) != 0)
+            return;
+
+        _window.WebMessageReceived -= WebMessageReceived;
+        _window.Closed -= WindowClosed;
+
+        // Stop accepting new messages and wake the message pumps.
+        _outgoingMessages.Writer.TryComplete();
+        _incomingMessages.Writer.TryComplete();
 
         try
         {
-            await DisposeBaseAsyncWithTimeout().ConfigureAwait(false);
+            _cts.Cancel();
+        }
+        catch
+        {
+            // ignored
+        }
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        ExceptionDispatchInfo? disposeException = null;
+        var suppressDisposeTimeoutLog = AreMessagePumpsStopped;
+
+        try
+        {
+            await DisposeBaseAsyncWithTimeout(suppressDisposeTimeoutLog).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -174,20 +225,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
 
         try
         {
-            _window.WebMessageReceived -= WebMessageReceived;
-
-            // Stop accepting new messages and wake the message pumps.
-            _outgoingMessages.Writer.TryComplete();
-            _incomingMessages.Writer.TryComplete();
-
-            try
-            {
-                await _cts.CancelAsync().ConfigureAwait(false);
-            }
-            catch
-            {
-                // ignored
-            }
+            StopAcceptingMessages();
 
             try
             {
@@ -209,7 +247,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         disposeException?.Throw();
     }
 
-    private async Task DisposeBaseAsyncWithTimeout()
+    private async Task DisposeBaseAsyncWithTimeout(bool suppressTimeoutLog)
     {
         var disposeTask = base.DisposeAsyncCore().AsTask();
 
@@ -223,10 +261,15 @@ internal sealed class PhotinoWebViewManager : WebViewManager
             return;
         }
 
-        Log($"Timed out while disposing Blazor renderer after {s_rendererDisposeTimeout}.");
+        if (!suppressTimeoutLog)
+            Log($"Timed out while disposing Blazor renderer after {s_rendererDisposeTimeout}.");
 
         _ = disposeTask.ContinueWith(
-            task => Log($"Blazor renderer disposal failed after timeout: {task.Exception}"),
+            task =>
+            {
+                if (!suppressTimeoutLog)
+                    Log($"Blazor renderer disposal failed after timeout: {task.Exception}");
+            },
             CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted,
             TaskScheduler.Default);
