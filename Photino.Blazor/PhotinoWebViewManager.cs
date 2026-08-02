@@ -13,9 +13,11 @@ namespace Photino.Blazor;
 
 internal sealed class PhotinoWebViewManager : WebViewManager
 {
+    private readonly record struct IncomingWebMessage(string Message, Uri Uri);
+
     private readonly PhotinoWindow _window;
     private readonly Channel<string> _outgoingMessages;
-    private readonly Channel<string> _incomingMessages;
+    private readonly Channel<IncomingWebMessage> _incomingMessages;
     private readonly Task _outgoingMessagesTask;
     private readonly Task _incomingMessagesTask;
     private readonly CancellationTokenSource _cts = new();
@@ -48,7 +50,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
             AllowSynchronousContinuations = false
         });
 
-        _incomingMessages = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
+        _incomingMessages = Channel.CreateUnbounded<IncomingWebMessage>(new UnboundedChannelOptions
         {
             SingleReader = true,
             SingleWriter = false,
@@ -121,7 +123,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         if (AreMessagePumpsStopped)
             return;
 
-        if (!_incomingMessages.Writer.TryWrite(e.Message) && !AreMessagePumpsStopped)
+        if (!_incomingMessages.Writer.TryWrite(new IncomingWebMessage(e.Message, e.Uri)) && !AreMessagePumpsStopped)
             Log("Failed to enqueue incoming WebView message because the message pump is closed.");
     }
 
@@ -182,9 +184,9 @@ internal sealed class PhotinoWebViewManager : WebViewManager
 
                     try
                     {
-                        // TODO: Photino should provide the source URL for the message so this can be validated.
-                        // Until then, messages are treated as originating from the app host.
-                        MessageReceived(AppBaseUri, message);
+                        // The native layer provides the top-level WebView URI for the message.
+                        // This is used as the message source for Blazor WebView dispatching.
+                        MessageReceived(message.Uri, message.Message);
                     }
                     catch (Exception ex)
                     {
