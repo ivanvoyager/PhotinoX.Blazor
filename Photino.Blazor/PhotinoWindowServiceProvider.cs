@@ -7,23 +7,27 @@ internal sealed class PhotinoWindowServiceProvider : IServiceProvider, IServiceS
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IServiceScope _scope;
     private readonly IPhotinoWebResourceHandler _resourceHandler;
+    private readonly Uri _appBaseUri;
     private HttpClient? _httpClient;
 
-    internal PhotinoWindowServiceProvider(IServiceProvider rootServices, IPhotinoWebResourceHandler resourceHandler)
+    internal PhotinoWindowServiceProvider(IServiceProvider rootServices, IPhotinoWebResourceHandler resourceHandler, Uri appBaseUri)
     {
         ArgumentNullException.ThrowIfNull(rootServices);
         ArgumentNullException.ThrowIfNull(resourceHandler);
+        ArgumentNullException.ThrowIfNull(appBaseUri);
 
         _scopeFactory = rootServices.GetRequiredService<IServiceScopeFactory>();
         _scope = _scopeFactory.CreateScope();
         _resourceHandler = resourceHandler;
+        _appBaseUri = appBaseUri;
     }
 
-    private PhotinoWindowServiceProvider(IServiceScopeFactory scopeFactory, IServiceScope scope, IPhotinoWebResourceHandler resourceHandler)
+    private PhotinoWindowServiceProvider(IServiceScopeFactory scopeFactory, IServiceScope scope, IPhotinoWebResourceHandler resourceHandler, Uri appBaseUri)
     {
         _scopeFactory = scopeFactory;
         _scope = scope;
         _resourceHandler = resourceHandler;
+        _appBaseUri = appBaseUri;
     }
 
     public IServiceProvider ServiceProvider => this;
@@ -42,7 +46,7 @@ internal sealed class PhotinoWindowServiceProvider : IServiceProvider, IServiceS
         if (serviceType == typeof(HttpClient))
             return _httpClient ??= new HttpClient(new PhotinoHttpHandler(_resourceHandler))
             {
-                BaseAddress = PhotinoWebViewManager.AppBaseUri
+                BaseAddress = _appBaseUri
             };
 
         return _scope.ServiceProvider.GetService(serviceType);
@@ -50,10 +54,7 @@ internal sealed class PhotinoWindowServiceProvider : IServiceProvider, IServiceS
 
     public IServiceScope CreateScope()
     {
-        return new PhotinoWindowServiceProvider(
-            _scopeFactory,
-            _scopeFactory.CreateScope(),
-            _resourceHandler);
+        return new PhotinoWindowServiceProvider(_scopeFactory, _scopeFactory.CreateScope(), _resourceHandler, _appBaseUri);
     }
 
     public void Dispose()

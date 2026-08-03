@@ -42,6 +42,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         ArgumentNullException.ThrowIfNull(window);
 
         _window = window;
+        AppOriginUri = config.Value.AppBaseUri;
 
         _outgoingMessages = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
         {
@@ -66,6 +67,8 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         _incomingMessagesTask = Task.Run(() => ProcessIncomingMessagesAsync(_cancellationToken), _cancellationToken);
     }
 
+    internal Uri AppOriginUri { get; }
+
     private bool AreMessagePumpsStopped => Volatile.Read(ref _messagePumpsStopped) != 0;
 
     internal Stream? HandleWebRequestCore(string url, out string? contentType)
@@ -86,7 +89,7 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         if (queryIndex >= 0)
             url = url[..queryIndex];
 
-        if (url.StartsWith(AppBaseUri.ToString(), StringComparison.Ordinal)
+        if (url.StartsWith(AppOriginUri.ToString(), StringComparison.Ordinal)
             && TryGetResponseContent(url, !hasFileExtension, out _, out _,
                 out var content, out var headers))
         {

@@ -93,7 +93,9 @@ public sealed class PhotinoBlazorApp
         var dispatcher = new PhotinoBlazorDispatcher(synchronizationContext);
 
         var resourceHandler = new PhotinoWindowResourceHandler();
-        var windowServices = new PhotinoWindowServiceProvider(Services, resourceHandler);
+        var config = Services.GetRequiredService<IOptions<PhotinoBlazorAppConfiguration>>();
+
+        var windowServices = new PhotinoWindowServiceProvider(Services, resourceHandler, config.Value.AppBaseUri);
 
         var webViewManager = new PhotinoWebViewManager(
             window,
@@ -101,15 +103,13 @@ public sealed class PhotinoBlazorApp
             dispatcher,
             windowServices.GetRequiredService<IFileProvider>(),
             rootComponents.JSComponents,
-            windowServices.GetRequiredService<IOptions<PhotinoBlazorAppConfiguration>>());
+            config);
 
         var blazorWindow = new PhotinoBlazorWindow(window, webViewManager, rootComponents, windowServices);
 
         resourceHandler.Handler = blazorWindow;
 
-        window.RegisterCustomSchemeHandler(
-            PhotinoWebViewManager.BlazorAppScheme,
-            blazorWindow.HandleWebRequest);
+        window.RegisterCustomSchemeHandler(config.Value.AppBaseUri.Scheme, blazorWindow.HandleWebRequest);
 
         lock (_blazorWindows)
         {
