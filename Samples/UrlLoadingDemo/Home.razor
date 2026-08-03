@@ -1,0 +1,27 @@
+@page "/"
+
+<div class="main">
+	<h1>PhotinoX.Blazor UrlLoading Demo</h1>
+
+	<p>
+		This sample demonstrates current-window URL loading, external link handling,
+		target="_blank" behavior, and canceled navigation.
+	</p>
+
+	<ul>
+		<li>
+			<a href="/counter">Internal app link</a>
+		</li>
+		<li>
+			<a href="https://example.com/">External link opened externally via UrlLoading</a>
+		</li>
+		<li>
+			<a href="https://example.com/" target="_blank" rel="noopener noreferrer">
+				target="_blank" link opened externally without UrlLoading
+			</a>
+		</li>
+		<li>
+			<a href="https://blocked.example.com/">Blocked link canceled by UrlLoading</a>
+		</li>
+	</ul>
+</div>

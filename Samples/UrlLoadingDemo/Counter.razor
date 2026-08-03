@@ -1,0 +1,27 @@
+@page "/counter"
+
+<div class="main">
+	<h1>Internal Blazor Page</h1>
+
+	<p>
+		This page was loaded inside the Blazor WebView.
+	</p>
+
+	<div class="counter-panel">
+		<p>Current count: <strong>@_currentCount</strong></p>
+		<button type="button" @onclick="IncrementCount">Increment</button>
+	</div>
+
+	<p>
+		<a href="/">Back to home</a>
+	</p>
+</div>
+
+@code {
+	private int _currentCount;
+
+	private void IncrementCount()
+	{
+		_currentCount++;
+	}
+}

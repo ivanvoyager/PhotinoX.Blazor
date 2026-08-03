@@ -12,6 +12,7 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
     private bool _isShown;
     private bool _areRootComponentsAttached;
     private bool _isDisposed;
+    private Uri? _suppressUrlLoadingUri;
 
     internal PhotinoBlazorWindow(
         PhotinoWindow window,
@@ -23,6 +24,9 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
         WebViewManager = webViewManager ?? throw new ArgumentNullException(nameof(webViewManager));
         RootComponents = rootComponents ?? throw new ArgumentNullException(nameof(rootComponents));
         _services = services ?? throw new ArgumentNullException(nameof(services));
+
+        Window.NavigationStarting += OnNavigationStarting;
+        Window.NewWindowRequested += OnNewWindowRequested;
     }
 
     /// <summary>
@@ -36,6 +40,74 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
     public RootComponentsCollection RootComponents { get; }
 
     internal PhotinoWebViewManager WebViewManager { get; }
+
+    /// <summary>
+    /// Occurs before the Blazor WebView loads a top-level URL.
+    /// </summary>
+    /// <remarks>
+    /// Anchor tags with <c>target="_blank"</c> and JavaScript <c>window.open(...)</c>
+    /// are opened externally and do not raise this event.
+    /// </remarks>
+    public event EventHandler<UrlLoadingEventArgs>? UrlLoading;
+
+    private void OnNavigationStarting(object? sender, NavigationStartingEventArgs e)
+    {
+        if (_suppressUrlLoadingUri is not null)
+        {
+            var suppressUrlLoadingUri = _suppressUrlLoadingUri;
+            _suppressUrlLoadingUri = null;
+
+            if (suppressUrlLoadingUri.Equals(e.Uri))
+                return;
+        }
+
+        var args = UrlLoadingEventArgs.CreateWithDefaultLoadingStrategy(e.Uri, WebViewManager.AppOriginUri);
+        UrlLoading?.Invoke(this, args);
+
+        switch (args.UrlLoadingStrategy)
+        {
+            case UrlLoadingStrategy.OpenInWebView:
+                e.Cancel = false;
+                break;
+
+            case UrlLoadingStrategy.OpenExternally:
+                e.Cancel = true;
+                TryOpenExternally(args.Url);
+                break;
+
+            case UrlLoadingStrategy.CancelLoad:
+                e.Cancel = true;
+                break;
+
+            default:
+                e.Cancel = true;
+                Window.Log($"Unsupported URL loading strategy: {args.UrlLoadingStrategy}.");
+                break;
+        }
+    }
+
+    private void OnNewWindowRequested(object? sender, NewWindowRequestedEventArgs e)
+    {
+        TryOpenExternally(e.Uri);
+    }
+
+    private bool TryOpenExternally(Uri uri)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri)
+            {
+                UseShellExecute = true
+            });
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Window.Log($"Failed to open URL externally: {uri}. {ex}");
+            return false;
+        }
+    }
 
     /// <summary>
     /// Shows the window and starts the Blazor content.
@@ -57,6 +129,11 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
 
             AttachRootComponentsAsync().GetAwaiter().GetResult();
 
+            var startUri = Uri.TryCreate(Window.StartUrl, UriKind.Absolute, out var absoluteStartUri)
+                ? absoluteStartUri
+                : new Uri(WebViewManager.AppOriginUri, Window.StartUrl);
+
+            _suppressUrlLoadingUri = startUri;
             WebViewManager.Navigate(Window.StartUrl);
             Window.Show();
         }
@@ -87,6 +164,9 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
             return;
 
         _isDisposed = true;
+
+        Window.NavigationStarting -= OnNavigationStarting;
+        Window.NewWindowRequested -= OnNewWindowRequested;
 
         try
         {

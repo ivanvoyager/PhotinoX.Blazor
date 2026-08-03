@@ -1,0 +1,152 @@
+:root {
+    color-scheme: light dark;
+    font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 16px;
+}
+
+body {
+    margin: 0;
+    background: #f6f7fb;
+    color: #1f2328;
+}
+
+.main {
+    max-width: 820px;
+    margin: 48px auto;
+    padding: 32px 36px;
+    background: #ffffff;
+    border: 1px solid #d8dee4;
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(31, 35, 40, 0.08);
+}
+
+h1 {
+    margin: 0 0 12px;
+    font-size: 32px;
+    line-height: 1.2;
+    font-weight: 650;
+}
+
+p {
+    margin: 0 0 24px;
+    line-height: 1.55;
+    color: #57606a;
+}
+
+ul {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+li {
+    margin: 0;
+}
+
+a {
+    display: block;
+    padding: 14px 16px;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    color: #0969da;
+    background: #f6f8fa;
+    text-decoration: none;
+}
+
+    a:hover {
+        background: #eef4ff;
+        border-color: #0969da;
+    }
+
+.counter-panel {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 24px 0;
+    padding: 16px;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+}
+
+    .counter-panel p {
+        margin: 0;
+        color: #24292f;
+    }
+
+button {
+    appearance: none;
+    padding: 10px 16px;
+    border: 1px solid #0969da;
+    border-radius: 8px;
+    color: #ffffff;
+    background: #0969da;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    button:hover {
+        background: #0757b8;
+        border-color: #0757b8;
+    }
+
+    button:active {
+        background: #054da3;
+        border-color: #054da3;
+    }
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #0d1117;
+        color: #f0f6fc;
+    }
+
+    .main {
+        background: #161b22;
+        border-color: #30363d;
+        box-shadow: none;
+    }
+
+    p {
+        color: #8b949e;
+    }
+
+    a {
+        color: #58a6ff;
+        background: #0d1117;
+        border-color: #30363d;
+    }
+
+        a:hover {
+            background: #111d2f;
+            border-color: #58a6ff;
+        }
+
+    .counter-panel {
+        background: #0d1117;
+        border-color: #30363d;
+    }
+
+        .counter-panel p {
+            color: #f0f6fc;
+        }
+
+    button {
+        color: #ffffff;
+        background: #238636;
+        border-color: #238636;
+    }
+
+        button:hover {
+            background: #2ea043;
+            border-color: #2ea043;
+        }
+
+        button:active {
+            background: #1f6f30;
+            border-color: #1f6f30;
+        }
+}
