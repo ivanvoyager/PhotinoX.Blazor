@@ -12,7 +12,7 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
     private bool _isShown;
     private bool _areRootComponentsAttached;
     private bool _isDisposed;
-    private Uri? _suppressUrlLoadingUri;
+    private bool _suppressNextUrlLoading;
 
     internal PhotinoBlazorWindow(
         PhotinoWindow window,
@@ -52,13 +52,10 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
 
     private void OnNavigationStarting(object? sender, NavigationStartingEventArgs e)
     {
-        if (_suppressUrlLoadingUri is not null)
+        if (_suppressNextUrlLoading)
         {
-            var suppressUrlLoadingUri = _suppressUrlLoadingUri;
-            _suppressUrlLoadingUri = null;
-
-            if (suppressUrlLoadingUri.Equals(e.Uri))
-                return;
+            _suppressNextUrlLoading = false;
+            return;
         }
 
         var args = UrlLoadingEventArgs.CreateWithDefaultLoadingStrategy(e.Uri, WebViewManager.AppOriginUri);
@@ -129,11 +126,7 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
 
             AttachRootComponentsAsync().GetAwaiter().GetResult();
 
-            var startUri = Uri.TryCreate(Window.StartUrl, UriKind.Absolute, out var absoluteStartUri)
-                ? absoluteStartUri
-                : new Uri(WebViewManager.AppOriginUri, Window.StartUrl);
-
-            _suppressUrlLoadingUri = startUri;
+            _suppressNextUrlLoading = true;
             WebViewManager.Navigate(Window.StartUrl);
             Window.Show();
         }
