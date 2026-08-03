@@ -67,6 +67,26 @@ Root components should be configured before the corresponding `PhotinoBlazorWind
 
 `PhotinoX.Blazor` uses the `app` custom scheme on Windows, macOS, and Linux. The upstream Windows `http` workaround is no longer used because `PhotinoX.Native` now supports custom scheme navigation on WebView2.
 
+## URL loading
+
+`PhotinoX.Blazor` supports BlazorWebView-style URL loading policy through `PhotinoBlazorWindow.UrlLoading`.
+
+Normal top-level navigation raises `UrlLoading`, allowing the app to choose whether a URL should load inside the WebView, open externally, or be canceled.
+
+```csharp
+app.MainBlazorWindow.UrlLoading += (_, e) =>
+{
+    if (e.Url.Scheme is "http" or "https")
+        e.UrlLoadingStrategy = UrlLoadingStrategy.OpenExternally;
+};
+```
+
+Default behavior:
+
+- app-origin URLs load inside the WebView;
+- external HTTP/HTTPS URLs open in the system browser;
+- `target="_blank"` and `window.open(...)` are handled as new-window requests and open externally.
+
 ## Key differences from Photino.Blazor
 
 | Area | Photino.Blazor | PhotinoX.Blazor |
@@ -74,6 +94,7 @@ Root components should be configured before the corresponding `PhotinoBlazorWind
 | Application model | Main-window host built around `PhotinoWindow.WaitForClose()`. | Runs on top of the `PhotinoApplication` model. |
 | Window hosting | Main window, root components, WebView manager, and services are mostly application-level. | Each `PhotinoBlazorWindow` has window-scoped root components, resource handling, WebView manager state, and Blazor dispatcher/synchronization context. |
 | Application scheme | Uses `http` on Windows and `app` on Linux/macOS. | Uses `app` on all supported platforms. |
+| URL loading policy | No BlazorWebView-style `UrlLoading` API for intercepting normal link navigation. | Adds `UrlLoading`, `UrlLoadingEventArgs`, and `UrlLoadingStrategy` for intercepting top-level navigation and choosing `OpenInWebView`, `OpenExternally`, or `CancelLoad`. |
 
 ## Multiple windows
 
@@ -135,8 +156,7 @@ dotnet add package PhotinoX.Blazor
 - **.NET 10 SDK** (build)
 - **Target frameworks:** `net8.0; net9.0; net10.0` (package supports all three)
 - Runtime deps: see [**PhotinoX.Native**](https://www.nuget.org/packages/PhotinoX.Native) (`runtimes/<rid>/native/`)
-- **Windows:** WebView2 Runtime  
-  Required component: **Microsoft.Web.WebView2** (Edge WebView2)  
+- **Windows:** Microsoft Edge WebView2 Runtime  
   https://learn.microsoft.com/microsoft-edge/webview2/
 - **macOS:** WKWebView (system WebKit)  
   https://developer.apple.com/documentation/webkit/wkwebview/
