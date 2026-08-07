@@ -208,7 +208,7 @@ public sealed class PhotinoBlazorApp
                 _windowDisposeTasks.Add(window.DisposeAsyncCore().AsTask());
 
             _blazorWindows.Clear();
-            windowDisposeTasks = _windowDisposeTasks.ToArray();
+            windowDisposeTasks = [.. _windowDisposeTasks];
         }
 
         try
@@ -232,8 +232,7 @@ public sealed class PhotinoBlazorApp
 
     private void ThrowIfDisposed()
     {
-        if (_isDisposed)
-            throw new ObjectDisposedException(nameof(PhotinoBlazorApp));
+        ObjectDisposedException.ThrowIf(_isDisposed, nameof(PhotinoBlazorApp));
     }
 
     private static void ThrowApplicationAlreadyRunning()

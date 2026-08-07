@@ -132,7 +132,8 @@ static void Main(string[] args)
 
 ## Core (ecosystem)
 
-- [**PhotinoX**](https://github.com/ivanvoyager/PhotinoX) - .NET wrapper around the native layer.
+- [**PhotinoX**](https://github.com/ivanvoyager/PhotinoX) - managed .NET wrapper around the native layer.
+- [**PhotinoX.App**](https://github.com/ivanvoyager/PhotinoX.App) - Application composition layer for PhotinoX desktop applications.
 - [**PhotinoX.Native**](https://github.com/ivanvoyager/PhotinoX.Native) - native binaries for Windows/macOS/Linux.
 - [**PhotinoX.Server**](https://github.com/ivanvoyager/PhotinoX.Server) - optional local static-file server for SPA/static assets.
 - [**PhotinoX.Samples**](https://github.com/ivanvoyager/PhotinoX.Samples) - sample projects showcasing common scenarios.
@@ -144,12 +145,13 @@ static void Main(string[] args)
 ```bash
 dotnet add package PhotinoX.Blazor
 ```
+
 `PhotinoX.Native` provides the native WebView host binaries and must be available for the target runtime identifier.
-> Package targets **net8.0; net9.0; net10.0**. CI builds use the latest **.NET 10 SDK**.
+> Package targets **net8.0; net9.0; net10.0**.
 
 ## Samples
 
-- https://github.com/ivanvoyager/PhotinoX.Blazor/blob/master/Samples
+- https://github.com/ivanvoyager/PhotinoX.Blazor/tree/master/Samples
 
 ## Requirements
 
