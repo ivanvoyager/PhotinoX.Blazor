@@ -46,7 +46,7 @@ public sealed class PhotinoBlazorApp
         MainBlazorWindow = CreateWindowCore(parent: null);
 
         MainWindow
-            .SetTitle("Photino.Blazor App")
+            .SetTitle("PhotinoX.Blazor App")
             .SetUseOsDefaultSize(false)
             .SetUseOsDefaultLocation(false)
             .SetWidth(1000)
