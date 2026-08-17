@@ -84,10 +84,11 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         var localPath = uri.LocalPath;
         var hasFileExtension = localPath.LastIndexOf('.') > localPath.LastIndexOf('/');
 
-        // Remove query parameters before attempting to retrieve the file. For example: http://localhost/_content/Blazorise/button.js?v=1.0.7.0
-        var queryIndex = url.IndexOf('?');
-        if (queryIndex >= 0)
-            url = url[..queryIndex];
+        // Remove query and fragment before attempting to retrieve the file.
+        // For example:
+        //   app://localhost/_content/Blazorise/button.js?v=1.0.7.0
+        //   app://localhost/index.html#/settings
+        url = uri.GetLeftPart(UriPartial.Path);
 
         if (url.StartsWith(AppOriginUri.ToString(), StringComparison.Ordinal)
             && TryGetResponseContent(url, !hasFileExtension, out _, out _,
