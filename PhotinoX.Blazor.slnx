@@ -12,4 +12,5 @@
     <File Path="README.md" />
   </Folder>
   <Project Path="Photino.Blazor/PhotinoX.Blazor.csproj" />
+  <Project Path="tests/PhotinoX.Blazor.Tests.csproj" />
 </Solution>

@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Threading.Channels;
 using Microsoft.AspNetCore.Components;
@@ -11,7 +10,7 @@ using Photino.NET;
 
 namespace Photino.Blazor;
 
-internal sealed class PhotinoWebViewManager : WebViewManager
+internal sealed partial class PhotinoWebViewManager : WebViewManager
 {
     private readonly record struct IncomingWebMessage(string Message, Uri Uri);
 
@@ -36,13 +35,13 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         Dispatcher dispatcher,
         IFileProvider fileProvider,
         JSComponentConfigurationStore jsComponents,
-        IOptions<PhotinoBlazorAppConfiguration> config)
-        : base(provider, dispatcher, config.Value.AppBaseUri, fileProvider, jsComponents, config.Value.HostPage)
+        IOptions<PhotinoBlazorOptions> options)
+        : base(provider, dispatcher, options.Value.AppBaseUri, fileProvider, jsComponents, options.Value.HostPage)
     {
         ArgumentNullException.ThrowIfNull(window);
 
         _window = window;
-        AppOriginUri = config.Value.AppBaseUri;
+        AppOriginUri = options.Value.AppBaseUri;
 
         _outgoingMessages = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
         {
@@ -325,11 +324,5 @@ internal sealed class PhotinoWebViewManager : WebViewManager
         }
 
         return false;
-    }
-
-    [DoesNotReturn]
-    private void ThrowWebViewMessagePumpStopped()
-    {
-        throw new OperationCanceledException("The Photino WebView message pump has been stopped.", _cancellationToken);
     }
 }

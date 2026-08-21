@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.DependencyInjection;
 using Photino.Blazor.MultiWindowSample.Components;
 using Photino.NET;
 
@@ -14,13 +13,13 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
-        var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
-
-        appBuilder.Services.AddLogging();
+        var appBuilder = PhotinoBlazorApp.CreateBuilder(args);
 
         appBuilder.RootComponents.Add<Window1>("app");
 
-        var app = appBuilder.Build();
+        appBuilder.ConfigureApplication(application => application.ShutdownMode = PhotinoShutdownMode.OnLastWindowClose);
+
+        using var app = appBuilder.Build();
 
         var window1 = app.MainBlazorWindow;
         window1.Window

@@ -26,7 +26,9 @@ public sealed class PhotinoHttpHandler : DelegatingHandler
     /// <param name="innerHandler">The inner HTTP handler used for requests not handled by Photino.</param>
     public PhotinoHttpHandler(IPhotinoWebResourceHandler resourceHandler, HttpMessageHandler? innerHandler)
     {
-        _resourceHandler = resourceHandler ?? throw new ArgumentNullException(nameof(resourceHandler));
+        ArgumentNullException.ThrowIfNull(resourceHandler);
+
+        _resourceHandler = resourceHandler;
 
         // The last inner handler in the pipeline must be a real HTTP handler.
         // Use HttpClientHandler for requests that are not handled by Photino.

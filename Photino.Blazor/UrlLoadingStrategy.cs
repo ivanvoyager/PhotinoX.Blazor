@@ -16,7 +16,7 @@ public enum UrlLoadingStrategy
 
     /// <summary>
     /// Allows loading URLs within the Blazor WebView.
-    /// This is the default strategy for URLs with a host matching the app origin.
+    /// This is the default strategy for URLs within the application base URI.
     /// <para>
     /// This strategy should not be used for external links unless you can ensure they are fully trusted.
     /// </para>

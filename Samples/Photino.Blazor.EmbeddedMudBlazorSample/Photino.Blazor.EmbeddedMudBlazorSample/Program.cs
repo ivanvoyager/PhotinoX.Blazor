@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using MudBlazor.Services;
 using Photino.Blazor.EmbeddedMudBlazorSample.Components;
@@ -13,41 +12,34 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
-        var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
+        var appBuilder = PhotinoBlazorApp.CreateBuilder(args);
 
-        ConfigureServices(appBuilder.Services);
-
+        appBuilder.UseFileProvider(_ => new ManifestEmbeddedFileProvider(typeof(Program).Assembly, "wwwroot"));
+        appBuilder.Services.AddMudServices();
         appBuilder.RootComponents.Add<App>("app");
 
-        var app = appBuilder.Build();
-
         var iconPath = ExtractEmbeddedResourceToTempFile("favicon.ico")
-            ?? throw new InvalidOperationException("Embedded favicon.ico was not found.");
+                       ?? throw new InvalidOperationException("Embedded favicon.ico was not found.");
 
-        app.MainBlazorWindow.Window
-            .SetSize(1400, 800)
-            .SetLogVerbosity(0)
-            .SetIconFile(iconPath)
-            .SetTitle("Photino.Blazor Embedded MudBlazor Sample");
+        appBuilder.ConfigureMainWindow(window =>
+        {
+            window
+                .SetSize(1400, 800)
+                .SetLogVerbosity(0)
+                .SetIconFile(iconPath)
+                .SetTitle("Photino.Blazor Embedded MudBlazor Sample");
+        });
+
+        using var app = appBuilder.Build();
 
         AppDomain.CurrentDomain.UnhandledException += (_, error) =>
         {
-            app.MainBlazorWindow.Window.ShowMessage(
+            app.MainWindow.ShowMessage(
                 "Fatal exception",
                 error.ExceptionObject?.ToString() ?? "Unknown fatal exception.");
         };
 
         app.Run();
-    }
-
-    private static void ConfigureServices(IServiceCollection services)
-    {
-        services.AddLogging();
-
-        services.AddSingleton<IFileProvider>(_ =>
-            new ManifestEmbeddedFileProvider(typeof(Program).Assembly, "wwwroot"));
-
-        services.AddMudServices();
     }
 
     private static string? ExtractEmbeddedResourceToTempFile(string fileName)

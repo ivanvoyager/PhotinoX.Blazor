@@ -33,8 +33,11 @@ internal sealed class PhotinoSynchronizationContext : SynchronizationContext
 
     private PhotinoSynchronizationContext(PhotinoDispatcher dispatcher, State state)
     {
-        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
-        _state = state ?? throw new ArgumentNullException(nameof(state));
+        ArgumentNullException.ThrowIfNull(dispatcher);
+        ArgumentNullException.ThrowIfNull(state);
+
+        _dispatcher = dispatcher;
+        _state = state;
     }
 
     private readonly State _state;

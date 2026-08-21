@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Photino.Blazor.NativeAOT;
 
@@ -8,24 +7,21 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
-        var appBuilder = PhotinoBlazorAppBuilder.CreateDefault(args);
-
-        appBuilder.Services
-            .AddLogging();
+        var appBuilder = PhotinoBlazorApp.CreateBuilder(args);
 
         // Register the root component for the main window.
         appBuilder.RootComponents.Add<App>("app");
 
-        var app = appBuilder.Build();
+        using var app = appBuilder.Build();
 
         // Customize the native Photino window.
-        app.MainBlazorWindow.Window
+        app.MainWindow
             .SetIconFile("favicon.ico")
             .SetTitle("PhotinoX Blazor Sample");
 
         AppDomain.CurrentDomain.UnhandledException += (_, error) =>
         {
-            app.MainBlazorWindow.Window.ShowMessage(
+            app.MainWindow.ShowMessage(
                 "Fatal exception",
                 error.ExceptionObject?.ToString() ?? "Unknown fatal exception.");
         };
