@@ -1,48 +1,38 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using PhotinoX.App;
 
 namespace Photino.Blazor;
 
 /// <summary>
 /// Provides service registration helpers for Photino Blazor applications.
 /// </summary>
-public static class ServiceCollectionExtensions
+internal static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Adds the default services required to run a Photino Blazor application.
+    /// Adds the services required to run a Photino Blazor application.
     /// </summary>
     /// <param name="services">The service collection to configure.</param>
-    /// <param name="fileProvider">
-    /// An optional file provider used to serve the Blazor host page and static assets.
-    /// If omitted, files are served from the application's <c>wwwroot</c> directory.
-    /// </param>
-    /// <returns>A Photino Blazor builder for further configuration.</returns>
-    public static IPhotinoBlazorBuilder AddBlazorDesktop(
-        this IServiceCollection services,
-        IFileProvider? fileProvider = null)
+    /// <returns>The service collection.</returns>
+    internal static IServiceCollection AddBlazorDesktop(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         services
-            .AddOptions<PhotinoBlazorAppConfiguration>()
-            .Configure(options =>
-            {
-                options.AppBaseUri = PhotinoWebViewManager.AppBaseUri;
-                options.HostPage = "index.html";
-            });
+            .AddOptions<PhotinoBlazorOptions>()
+            .BindConfiguration("PhotinoX:Blazor")
+            .Validate(options => options.AppBaseUri is { IsAbsoluteUri: true }, $"{nameof(PhotinoBlazorOptions.AppBaseUri)} must be an absolute URI.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.HostPage), $"{nameof(PhotinoBlazorOptions.HostPage)} must not be empty.")
+            .ValidateOnStart();
 
         services
-            .AddSingleton<IFileProvider>(_ =>
+            .AddSingleton<IFileProvider>(serviceProvider =>
             {
-                if (fileProvider is not null)
-                    return fileProvider;
-
-                var root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot");
-                return new PhysicalFileProvider(root);
+                var environment = serviceProvider.GetRequiredService<PhotinoEnvironment>();
+                return new PhysicalFileProvider(environment.WebRootPath);
             })
-            .AddSingleton<PhotinoBlazorApp>()
             .AddBlazorWebView();
 
-        return new PhotinoBlazorBuilder(services);
+        return services;
     }
 }

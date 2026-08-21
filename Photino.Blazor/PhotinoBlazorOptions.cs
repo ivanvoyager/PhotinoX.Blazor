@@ -1,9 +1,9 @@
 namespace Photino.Blazor;
 
 /// <summary>
-/// Configures the Photino Blazor application host.
+/// Configures the Photino Blazor host.
 /// </summary>
-public class PhotinoBlazorAppConfiguration
+public sealed class PhotinoBlazorOptions
 {
     /// <summary>
     /// Gets or sets the base URI used by the Blazor WebView host.

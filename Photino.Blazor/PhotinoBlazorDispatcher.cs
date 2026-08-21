@@ -8,7 +8,9 @@ internal sealed class PhotinoBlazorDispatcher : Dispatcher
 
     public PhotinoBlazorDispatcher(PhotinoSynchronizationContext context)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
+
+        _context = context;
         _context.UnhandledException += (_, e) => OnUnhandledException(e);
     }
 

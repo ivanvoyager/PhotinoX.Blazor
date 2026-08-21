@@ -32,7 +32,7 @@ public class UrlLoadingEventArgs : EventArgs
     /// <summary>
     /// Gets or sets the policy to use when loading links from the WebView.
     /// Defaults to <see cref="UrlLoadingStrategy.OpenExternally"/> unless <see cref="Url"/> has a host
-    /// matching the app origin, in which case the default becomes <see cref="UrlLoadingStrategy.OpenInWebView"/>.
+    /// within the application base URI, in which case the default becomes <see cref="UrlLoadingStrategy.OpenInWebView"/>.
     /// <para>
     /// This value should not be changed to <see cref="UrlLoadingStrategy.OpenInWebView"/> for external links
     /// unless you can ensure they are fully trusted.

@@ -6,12 +6,12 @@ namespace Photino.Blazor;
 /// <summary>
 /// Represents a Photino window that hosts Blazor content.
 /// </summary>
-public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
+public sealed partial class PhotinoBlazorWindow : IPhotinoWebResourceHandler
 {
     private readonly PhotinoWindowServiceProvider _services;
-    private bool _isShown;
+    private bool _isStarted;
     private bool _areRootComponentsAttached;
-    private bool _isDisposed;
+    private int _disposed;
     private bool _suppressNextUrlLoading;
 
     internal PhotinoBlazorWindow(
@@ -20,10 +20,15 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
         RootComponentsCollection rootComponents,
         PhotinoWindowServiceProvider services)
     {
-        Window = window ?? throw new ArgumentNullException(nameof(window));
-        WebViewManager = webViewManager ?? throw new ArgumentNullException(nameof(webViewManager));
-        RootComponents = rootComponents ?? throw new ArgumentNullException(nameof(rootComponents));
-        _services = services ?? throw new ArgumentNullException(nameof(services));
+        ArgumentNullException.ThrowIfNull(window);
+        ArgumentNullException.ThrowIfNull(webViewManager);
+        ArgumentNullException.ThrowIfNull(rootComponents);
+        ArgumentNullException.ThrowIfNull(services);
+
+        Window = window;
+        WebViewManager = webViewManager;
+        RootComponents = rootComponents;
+        _services = services;
 
         Window.NavigationStarting += OnNavigationStarting;
         Window.NewWindowRequested += OnNewWindowRequested;
@@ -107,14 +112,16 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
     }
 
     /// <summary>
-    /// Shows the window and starts the Blazor content.
+    /// Starts the Blazor content without showing the native window.
     /// </summary>
-    public void Show()
+    internal void Start()
     {
-        if (_isShown)
+        ThrowIfDisposed();
+
+        if (_isStarted)
             return;
 
-        _isShown = true;
+        _isStarted = true;
 
         try
         {
@@ -122,24 +129,42 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
                 Window.StartUrl = "/";
 
             if (RootComponents.Count == 0)
-                throw new InvalidOperationException("At least one root component must be configured before showing the window.");
+                ThrowRootComponentsNotConfigured();
 
             AttachRootComponentsAsync().GetAwaiter().GetResult();
 
             _suppressNextUrlLoading = true;
             WebViewManager.Navigate(Window.StartUrl);
-            Window.Show();
         }
         catch
         {
-            _isShown = false;
+            _isStarted = false;
             throw;
         }
+    }
+
+    /// <summary>
+    /// Starts the Blazor content and shows the native window on the current thread.
+    /// </summary>
+    /// <remarks>
+    /// On Windows, the calling thread must be an STA thread. Use <see cref="PhotinoBlazorApp.Run"/>
+    /// to run the main application window with automatic STA thread handling.
+    /// </remarks>
+    public void Show()
+    {
+        Start();
+        Window.Show();
     }
 
     /// <inheritdoc />
     public Stream? HandleWebRequest(string url, out string? contentType)
     {
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            contentType = null;
+            return null;
+        }
+
         return WebViewManager.HandleWebRequestCore(url, out contentType);
     }
 
@@ -153,10 +178,8 @@ public sealed class PhotinoBlazorWindow : IPhotinoWebResourceHandler
 
     internal async ValueTask DisposeAsyncCore()
     {
-        if (_isDisposed)
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
             return;
-
-        _isDisposed = true;
 
         Window.NavigationStarting -= OnNavigationStarting;
         Window.NewWindowRequested -= OnNewWindowRequested;

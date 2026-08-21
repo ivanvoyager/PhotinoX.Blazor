@@ -4,21 +4,13 @@ namespace UrlLoadingDemo;
 
 internal static class Program
 {
-    [STAThread]
-    private static int Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
-        var builder = PhotinoBlazorAppBuilder.CreateDefault(args);
+        var builder = PhotinoBlazorApp.CreateBuilder(args);
 
         builder.RootComponents.Add<App>("#app");
 
-        var app = builder.Build();
-
-        app.MainWindow
-            .SetTitle("PhotinoX.Blazor UrlLoading Demo")
-            .SetUseOsDefaultSize(false)
-            .SetUseOsDefaultLocation(false)
-            .SetSize(960, 760)
-            .Center();
+        await using var app = builder.Build();
 
         app.MainBlazorWindow.UrlLoading += (_, e) =>
         {

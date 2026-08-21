@@ -5,7 +5,7 @@ namespace Photino.Blazor;
 /// <summary>
 /// Describes a Blazor root component rendered in a Photino Blazor window.
 /// </summary>
-public sealed class RootComponent
+public sealed partial class RootComponent
 {
     /// <summary>
     /// Gets or sets the Blazor component type.
@@ -25,12 +25,12 @@ public sealed class RootComponent
     internal void Validate()
     {
         if (ComponentType is null)
-            throw new InvalidOperationException($"{nameof(RootComponent)} requires {nameof(ComponentType)}.");
+            ThrowComponentTypeNotConfigured();
 
         if (!typeof(IComponent).IsAssignableFrom(ComponentType))
-            throw new InvalidOperationException("The component type must implement IComponent.");
+            ThrowInvalidComponentType();
 
         if (string.IsNullOrWhiteSpace(Selector))
-            throw new InvalidOperationException($"{nameof(RootComponent)} requires {nameof(Selector)}.");
+            ThrowSelectorNotConfigured();
     }
 }
