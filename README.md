@@ -160,6 +160,36 @@ var service = app.Services.GetRequiredService<MyService>();
 
 Each `PhotinoBlazorWindow` uses a child service scope. The window service provider also supplies a window-specific `HttpClient` and `IPhotinoWebResourceHandler`, while other scoped application services are resolved from that child scope.
 
+### Custom service providers
+
+Custom dependency injection containers are supported through `IServiceProviderFactory<TContainerBuilder>`.
+
+For example, to use Autofac, install `Autofac.Extensions.DependencyInjection`:
+
+```bash
+dotnet add package Autofac.Extensions.DependencyInjection
+```
+
+Configure Autofac as the root service provider:
+
+```csharp
+var builder = PhotinoBlazorApp.CreateBuilder(args);
+
+builder.ConfigureContainer(
+    new AutofacServiceProviderFactory(),
+    container =>
+    {
+        container.RegisterModule<ApplicationModule>();
+    });
+
+builder.RootComponents.Add<App>("#app");
+
+using var app = builder.Build();
+return app.Run();
+```
+
+The configured provider is used for application services and as the foundation for per-window Blazor service scopes. Implementing `IHostBuilder` or manually building a separate container is not required.
+
 ## Configuration and logging
 
 `PhotinoBlazorAppBuilder` exposes the configuration, environment, and logging APIs from `PhotinoAppBuilder`:
