@@ -17,23 +17,25 @@ Blazor integration for [**PhotinoX**](https://github.com/ivanvoyager/PhotinoX) d
 
 `PhotinoX.Blazor` is an independent fork of [tryphotino/photino.Blazor](https://github.com/tryphotino/photino.Blazor) under the Apache-2.0 license and is **not affiliated** with the original project or organization.
 
-## Package architecture
+### Package architecture
 
-The managed PhotinoX packages form a layered application stack:
+The PhotinoX packages form a layered application stack:
 
 ```text
-PhotinoX
-└── PhotinoX.App
-    └── PhotinoX.Blazor
+PhotinoX.Native
+└── PhotinoX
+    └── PhotinoX.App
+        └── PhotinoX.Blazor
 ```
 
-- `PhotinoX` provides the native-first application, dispatcher, window, and WebView APIs.
-- `PhotinoX.App` adds dependency injection, configuration, logging, environment information, application initialization, settings binding, and application lifetime management.
+- `PhotinoX.Native` provides the native window and WebView runtime.
+- `PhotinoX` provides the managed application, dispatcher, window, and WebView APIs.
+- `PhotinoX.App` adds application composition, configuration, services, and lifetime management.
 - `PhotinoX.Blazor` builds on `PhotinoX.App` and adds Blazor-specific application and window hosting.
 
 `PhotinoBlazorApp` is a Blazor facade over `PhotinoApp`. Common application services, configuration, environment information, logging, application initialization, and disposal are provided by `PhotinoX.App`.
 
-## Features
+### Features
 
 - Modern `PhotinoBlazorApp.CreateBuilder(...)` application startup
 - Dependency injection through `IServiceCollection`
