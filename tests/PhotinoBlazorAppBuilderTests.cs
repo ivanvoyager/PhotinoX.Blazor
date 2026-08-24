@@ -2,10 +2,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
+using Photino.Blazor;
 
-namespace Photino.Blazor.Tests;
+namespace PhotinoX.Blazor.Tests;
 
 [TestClass]
+[DoNotParallelize]
 public sealed class PhotinoBlazorAppBuilderTests
 {
     [TestMethod]
