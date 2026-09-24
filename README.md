@@ -3,6 +3,7 @@
 # PhotinoX.Blazor
 
 [![NuGet Version](https://img.shields.io/nuget/v/PhotinoX.Blazor.svg)](https://www.nuget.org/packages/PhotinoX.Blazor)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ivanvoyager/PhotinoX.Blazor)
 [![Build](https://github.com/ivanvoyager/PhotinoX.Blazor/actions/workflows/build.yml/badge.svg)](https://github.com/ivanvoyager/PhotinoX.Blazor/actions/workflows/build.yml)
 [![License](https://img.shields.io/github/license/ivanvoyager/PhotinoX.Blazor?label=license)](https://github.com/ivanvoyager/PhotinoX.Blazor/blob/master/LICENSE)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/PhotinoX.Blazor.svg)](https://www.nuget.org/packages/PhotinoX.Blazor)

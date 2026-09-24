@@ -10,4 +10,8 @@
     <ProjectReference Include="..\Photino.Blazor\PhotinoX.Blazor.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Update="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
+  </ItemGroup>
+
 </Project>
