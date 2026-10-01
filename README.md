@@ -610,6 +610,12 @@ dotnet pack    Photino.Blazor/PhotinoX.Blazor.csproj -c Release -o artifacts
 
 Issues and PRs are welcome. Keep PRs focused, minimal, and consistent with the rest of PhotinoX.
 
+## Contributors
+
+<a href="https://github.com/ivanvoyager/PhotinoX.Blazor/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ivanvoyager/PhotinoX.Blazor" />
+</a>
+
 ## License
 
 PhotinoX.Blazor is licensed under **Apache-2.0**.
