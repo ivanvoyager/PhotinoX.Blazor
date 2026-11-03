@@ -1,4 +1,4 @@
-﻿<Project Sdk="MSTest.Sdk/4.4.1">
+﻿<Project Sdk="MSTest.Sdk/4.5.2">
 
   <PropertyGroup>
     <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
@@ -8,14 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Photino.Blazor\PhotinoX.Blazor.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Update="Microsoft.Testing.Extensions.TrxReport" Version="2.5.0" />
   </ItemGroup>
 
 </Project>

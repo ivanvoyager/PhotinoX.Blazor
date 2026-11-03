@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -263,6 +264,7 @@ public sealed partial class PhotinoBlazorApp : IDisposable, IAsyncDisposable
         try
         {
             MainBlazorWindow.Start();
+            Debug.Assert(!MainBlazorWindow.Window.IsInitialized);
             return _app.Run(MainBlazorWindow.Window);
         }
         finally
