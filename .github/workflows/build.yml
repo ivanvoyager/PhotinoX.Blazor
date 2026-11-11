@@ -18,7 +18,9 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Restore
         run: dotnet restore --nologo
@@ -29,7 +31,7 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-build
 
-      - name: Pack (nupkg + snupkg)
+      - name: Pack (nupkg + snupkg, prerelease)
         run: dotnet pack Photino.Blazor/PhotinoX.Blazor.csproj -c Release --no-build -o artifacts --nologo /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:VersionSuffix="pre.${{ github.run_number }}"
 
       - name: Upload nupkg
